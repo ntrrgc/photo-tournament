@@ -15,6 +15,7 @@ namespace CompetititiveCullingAlgorithm
     public partial class MainWindow : Form
     {
         private TournamentController controller = new TournamentController();
+        private ImageCache imageCache = new ImageCache();
 
         public MainWindow()
         {
@@ -25,21 +26,38 @@ namespace CompetititiveCullingAlgorithm
         {
             lblStatus.Text = "";
 
-
-
             var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
             controller.NewWinnerEvent += Tournament_NewWinnerEvent;
             controller.TournamentFinishedEvent += Tournament_TournamentFinishedEvent;
             controller.NewPageEvent += Tournament_NewPageEvent;
+            controller.PreloadPhotosAdvicedEvent += Controller_PreloadPhotosAdvicedEvent;
             controller.StartNewTournament(@"V:\Photos\2018\2018-03-26 Fotos en Salamanca", 3);
+        }
+
+        private void Controller_PreloadPhotosAdvicedEvent(List<string> nextPhotos)
+        {
+            Console.WriteLine("Advice");
+            imageCache.ReplaceCache(nextPhotos.Take(4).ToList());
+        }
+
+        private void UpdatePictureBoxWithPhoto(PictureBox pictureBox, string photoPath)
+        {
+            pictureBox.Image = null;
+            ImageCache.RefCountedImage previousImage = (ImageCache.RefCountedImage) pictureBox.Tag;
+            previousImage?.Unref();
+            
+            imageCache.LoadAsync(photoPath).ContinueWith(image =>
+            {
+                ImageCache.RefCountedImage img = image.Result.Ref();
+                pictureBox.Tag = img;
+                pictureBox.Image = img.Image;
+            }, TaskScheduler.FromCurrentSynchronizationContext());
         }
 
         private void Tournament_NewPageEvent(TournamentController.IPageUIClient page)
         {
-            imgPhotoA.Image = null;
-            imgPhotoB.Image = null;
-            imgPhotoA.ImageLocation = page.PhotoA;
-            imgPhotoB.ImageLocation = page.PhotoB;
+            UpdatePictureBoxWithPhoto(imgPhotoA, page.PhotoA);
+            UpdatePictureBoxWithPhoto(imgPhotoB, page.PhotoB);
         }
 
         private void Tournament_TournamentFinishedEvent(List<PhotoPath> bestPhotos)

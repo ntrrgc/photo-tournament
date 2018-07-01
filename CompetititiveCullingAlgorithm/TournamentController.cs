@@ -55,6 +55,9 @@ namespace CompetititiveCullingAlgorithm
         public delegate void TournamentFinishedEventHandler(List<PhotoPath> bestPhotos);
         public event TournamentFinishedEventHandler TournamentFinishedEvent;
 
+        public delegate void PreloadPhotosAdvicedEventHandler(List<PhotoPath> nextPhotos);
+        public event PreloadPhotosAdvicedEventHandler PreloadPhotosAdvicedEvent;
+
         private class ComparablePhoto : IAsyncComparable<ComparablePhoto>
         {
             public ComparablePhoto(TournamentController controller, PhotoPath photoPath)
@@ -68,6 +71,8 @@ namespace CompetititiveCullingAlgorithm
 
             public Task<int> CompareToAsync(ComparablePhoto other)
             {
+                Controller.PreloadPhotosAdvicedEvent?.Invoke(
+                    Controller.Tournament.PredictItemsWorthPreloading().Select(x => x.PhotoPath).ToList());
                 Page page = new Page(this.PhotoPath, other.PhotoPath);
                 Controller.CurrentPage = page;
                 Controller.NewPageEvent(page);

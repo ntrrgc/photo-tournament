@@ -129,7 +129,7 @@
             this.btnChooseA.Size = new System.Drawing.Size(455, 34);
             this.btnChooseA.TabIndex = 6;
             this.btnChooseA.TabStop = false;
-            this.btnChooseA.Text = "The picture on the &left is better";
+            this.btnChooseA.Text = "This picture is better (1)";
             this.btnChooseA.UseVisualStyleBackColor = true;
             this.btnChooseA.Click += new System.EventHandler(this.btnChooseA_Click);
             // 
@@ -143,7 +143,7 @@
             this.btnChooseB.Size = new System.Drawing.Size(455, 34);
             this.btnChooseB.TabIndex = 7;
             this.btnChooseB.TabStop = false;
-            this.btnChooseB.Text = "The picture on the &right is better";
+            this.btnChooseB.Text = "This picture is better (2)";
             this.btnChooseB.UseVisualStyleBackColor = true;
             this.btnChooseB.Click += new System.EventHandler(this.btnChooseB_Click);
             // 
