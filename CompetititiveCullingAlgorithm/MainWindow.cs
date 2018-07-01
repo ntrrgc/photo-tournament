@@ -10,34 +10,11 @@ using System.Windows.Forms;
 
 namespace CompetititiveCullingAlgorithm
 {
+    using PhotoPath = String;
+
     public partial class MainWindow : Form
     {
-        UIPhoto photoA;
-        UIPhoto photoB;
-        TaskCompletionSource<int> betterPhotoPromise;
-
-        class UIPhoto : IAsyncComparable<UIPhoto>
-        {
-            public UIPhoto(MainWindow mainWindow, int n)
-            {
-                MainWindow = mainWindow;
-                N = n;
-            }
-
-            public MainWindow MainWindow { get; }
-            public int N { get; }
-
-            public async Task<int> CompareToAsync(UIPhoto other)
-            {
-                MainWindow.label1.Text = $"{this.ToString()} vs {other.ToString()}";
-                MainWindow.photoA = this;
-                MainWindow.photoB = other;
-                MainWindow.betterPhotoPromise = new TaskCompletionSource<int>();
-                return await MainWindow.betterPhotoPromise.Task;
-            }
-
-            public override string ToString() => $"{N}";
-        }
+        private TournamentController controller = new TournamentController();
 
         public MainWindow()
         {
@@ -46,31 +23,60 @@ namespace CompetititiveCullingAlgorithm
 
         private void MainWindow_Load(object sender, EventArgs e)
         {
-            toolStripStatusLabel1.Text = "";
+            lblStatus.Text = "";
+
+
 
             var scheduler = TaskScheduler.FromCurrentSynchronizationContext();
-            var tournament = new Tournament<UIPhoto>(Enumerable.Range(1, 7).ToList().Shuffle().Select(x => new UIPhoto(this, x)).ToList(), 3);
-            tournament.NewWinnerEvent += Tournament_NewWinnerEvent;
-            tournament.CalculateTopN().ContinueWith(bestPhotos =>
-                {
-                    label1.Text = $"Best photos are: {String.Join(", ", bestPhotos.Result.Select(x => x.ToString()))}";
-                }, scheduler);
+            controller.NewWinnerEvent += Tournament_NewWinnerEvent;
+            controller.TournamentFinishedEvent += Tournament_TournamentFinishedEvent;
+            controller.NewPageEvent += Tournament_NewPageEvent;
+            controller.StartNewTournament(@"V:\Photos\2018\2018-03-26 Fotos en Salamanca", 3);
         }
 
-        private void Tournament_NewWinnerEvent(int place, UIPhoto item)
+        private void Tournament_NewPageEvent(TournamentController.IPageUIClient page)
         {
-            toolStripStatusLabel1.Text = $"The photo {item.ToString()} has made to the place #{place}";
+            imgPhotoA.Image = null;
+            imgPhotoB.Image = null;
+            imgPhotoA.ImageLocation = page.PhotoA;
+            imgPhotoB.ImageLocation = page.PhotoB;
+        }
+
+        private void Tournament_TournamentFinishedEvent(List<PhotoPath> bestPhotos)
+        {
+            label1.Text = $"Best photos are: {String.Join(", ", bestPhotos.Select(x => x.ToString()))}";
+        }
+
+        private void Tournament_NewWinnerEvent(int place, PhotoPath item)
+        {
+            lblStatus.Text = $"The photo {item.ToString()} has made to the place #{place}";
         }
 
         private void MainWindow_KeyDown(object sender, KeyEventArgs e)
         {
-            if (betterPhotoPromise == null)
+            if (controller.CurrentPage == null)
                 return;
 
-            if (e.KeyCode == Keys.Left)
-                betterPhotoPromise.TrySetResult(1);
-            else if (e.KeyCode == Keys.Right)
-                betterPhotoPromise.TrySetResult(-1);
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.D1)
+            {
+                controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoAIsBetter);
+                e.Handled = true;
+            }
+            else if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D2)
+            {
+                controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
+                e.Handled = true;
+            }
+        }
+
+        private void btnChooseA_Click(object sender, EventArgs e)
+        {
+            controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoAIsBetter);
+        }
+
+        private void btnChooseB_Click(object sender, EventArgs e)
+        {
+            controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
         }
     }
 }

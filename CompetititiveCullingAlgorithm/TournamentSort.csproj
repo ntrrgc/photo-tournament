@@ -51,6 +51,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AsyncHelper.cs" />
+    <Compile Include="FindPhotosInPath.cs" />
     <Compile Include="IAsyncComparable.cs" />
     <Compile Include="MainWindow.cs">
       <SubType>Form</SubType>
