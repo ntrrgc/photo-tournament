@@ -67,6 +67,7 @@ namespace CompetititiveCullingAlgorithm
             {
                 Page page = new Page(this.PhotoPath, other.PhotoPath);
                 Controller.CurrentPage = page;
+                Controller.NewPageEvent(page);
                 return page.BetterPhotoPromise.Task.ContinueWith(async best =>
                     await best == PhotoChoice.PhotoAIsBetter ? 1 : -1).Unwrap();
             }
