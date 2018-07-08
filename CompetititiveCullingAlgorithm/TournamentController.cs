@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Serialization;
 
@@ -127,6 +128,21 @@ namespace CompetititiveCullingAlgorithm
         public void Load(string path)
         {
             ReplaceTournament(Tournament<PhotoPath>.SavedState.LoadFromFile(path).Instantiate());
+        }
+
+        private static string QuickSavePath { get { return Application.UserAppDataPath + @"\quick-save.xml"; } }
+
+        public bool QuickSaveExists { get; private set; } = File.Exists(QuickSavePath);
+
+        public void SaveQuick()
+        {
+            Save(QuickSavePath);
+            QuickSaveExists = true;
+        }
+
+        public void LoadQuick()
+        {
+            Load(QuickSavePath);
         }
 
         private void ReplaceTournament(Tournament<PhotoPath> newTournament)

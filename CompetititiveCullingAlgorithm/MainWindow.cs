@@ -34,11 +34,12 @@ namespace CompetititiveCullingAlgorithm
             controller.NewPageEvent += Tournament_NewPageEvent;
             controller.PreloadPhotosAdvicedEvent += Controller_PreloadPhotosAdvicedEvent;
             controller.StartNewTournament(@"V:\Photos\2018\2018-03-26 Fotos en Salamanca", 3);
+
+            UpdateGUI();
         }
 
         private void Controller_PreloadPhotosAdvicedEvent(List<string> nextPhotos)
         {
-            Console.WriteLine("Advice");
             imageCache.ReplaceCache(nextPhotos.ToList());
         }
 
@@ -47,7 +48,7 @@ namespace CompetititiveCullingAlgorithm
             public ImageCache.RefCountedImage RcImage;
             public CancellationTokenSource CancellationTokenSource;
 
-            public async void WaitAndSetImage(PictureBox pictureBox)
+            public async void WaitAndSetImage(MainWindow window, PictureBox pictureBox)
             {
                 Console.WriteLine($">{RcImage.Path}");
                 var image = await RcImage.Task;
@@ -55,6 +56,7 @@ namespace CompetititiveCullingAlgorithm
                     return;
                 Console.WriteLine($"!{RcImage.Path}");
                 pictureBox.Image = image;
+                window.UpdateGUI();
             }
         }
 
@@ -77,14 +79,13 @@ namespace CompetititiveCullingAlgorithm
                 RcImage = imageCache.LoadAsync(photoPath).Ref(),
                 CancellationTokenSource = new CancellationTokenSource()
             };
-            newRequest.WaitAndSetImage(pictureBox);
-            pictureBox.Tag = (ImageLoadRequest) newRequest;
+            pictureBox.Tag = (ImageLoadRequest)newRequest;
+            newRequest.WaitAndSetImage(this, pictureBox);
         }
 
         private void Tournament_NewPageEvent(TournamentController.IPageUIClient page)
         {
-            UpdatePictureBoxWithPhoto(imgPhotoA, page.PhotoA);
-            UpdatePictureBoxWithPhoto(imgPhotoB, page.PhotoB);
+            UpdateGUI();
         }
 
         private void Tournament_TournamentFinishedEvent(List<PhotoPath> bestPhotos)
@@ -104,12 +105,14 @@ namespace CompetititiveCullingAlgorithm
 
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.D1)
             {
-                controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoAIsBetter);
+                if (btnChooseA.Enabled)
+                    controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoAIsBetter);
                 e.Handled = true;
             }
             else if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D2)
             {
-                controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
+                if (btnChooseB.Enabled)
+                    controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
                 e.Handled = true;
             }
         }
@@ -126,12 +129,32 @@ namespace CompetititiveCullingAlgorithm
 
         private void toolStripButton2_Click(object sender, EventArgs e)
         {
-            controller.Save(Application.UserAppDataPath + @"\quick-save.xml");
+            controller.SaveQuick();
         }
 
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
-            controller.Load(Application.UserAppDataPath + @"\quick-save.xml");
+            controller.LoadQuick();
+        }
+
+        private bool BothImagesLoaded
+        {
+            get
+            {
+                var requestA = ((ImageLoadRequest)imgPhotoA.Tag);
+                var requestB = ((ImageLoadRequest)imgPhotoB.Tag);
+                if (requestA == null || requestB == null)
+                    return false;
+                return requestA.RcImage.Task.IsCompleted && requestB.RcImage.Task.IsCompleted;
+            }
+        }
+
+        private void UpdateGUI()
+        {
+            btnQuickLoad.Enabled = controller.QuickSaveExists;
+            btnChooseA.Enabled = btnChooseB.Enabled = controller.CurrentPage != null && BothImagesLoaded;
+            UpdatePictureBoxWithPhoto(imgPhotoA, controller.CurrentPage.PhotoA);
+            UpdatePictureBoxWithPhoto(imgPhotoB, controller.CurrentPage.PhotoB);
         }
     }
 }
