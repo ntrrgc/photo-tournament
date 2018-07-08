@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -13,14 +14,9 @@ namespace CompetititiveCullingAlgorithm
     {
         public class RefCountedImage
         {
-            public RefCountedImage(Image image)
-            {
-                Image = image;
-            }
-
-            public Image Image { get; }
-
             private int refCount = 1;
+            public String Path;
+            public Task<Image> Task { get; set; }
 
             public RefCountedImage Ref()
             {
@@ -33,11 +29,22 @@ namespace CompetititiveCullingAlgorithm
             {
                 Debug.Assert(refCount > 0); // not buried a second time
                 if (--refCount == 0)
-                    Image.Dispose();
+                    Task.Result.Dispose();
             }
         }
 
-        Dictionary<string, Task<RefCountedImage>> imagesByPath = new Dictionary<string, Task<RefCountedImage>>();
+        LRUCache<string, RefCountedImage> imagesByPath = new LRUCache<string, RefCountedImage>(24);
+
+        public ImageCache()
+        {
+            imagesByPath.ElementEvictedEvent += ImagesByPath_ElementEvictedEvent;
+        }
+
+        private void ImagesByPath_ElementEvictedEvent(string key, RefCountedImage value)
+        {
+            Console.WriteLine($"-{key}");
+            value.Unref();
+        }
 
         private Size GetMaxUsefulSize()
         {
@@ -73,30 +80,37 @@ namespace CompetititiveCullingAlgorithm
             return resizedImage;
         }
 
-        public Task<RefCountedImage> LoadAsync(string path)
+        // Caller must .Ref()
+        public RefCountedImage LoadAsync(string path)
         {
             if (!imagesByPath.ContainsKey(path))
             {
                 Console.WriteLine($"+{path}");
-                imagesByPath[path] = Task.Run(() => new RefCountedImage(ResizeToUsefulSize(Image.FromFile(path, true))));
+                var rcImage = new RefCountedImage { Path = path };
+                rcImage.Task = Task.Run(() =>
+                {
+                    try
+                    {
+                        return ResizeToUsefulSize(Image.FromFile(path, true));
+                    }
+                    finally
+                    {
+                        // Loading the image (running this code) takes one reference, being in the cache takes another one,
+                        // being used or awaited from the GUI takes a third one.
+                        // Making running this code take one reference avoids NPE if the image is evicted before finishing 
+                        // loading.
+                        Console.WriteLine($"@{path}");
+                        rcImage.Unref();
+                    }
+                });
+                imagesByPath.Add(path, rcImage.Ref());
             }
-            return imagesByPath[path];
+            return imagesByPath.TryUse(path);
         }
 
         public void ReplaceCache(List<string> wantedPaths)
         {
-            var wantedPathsSet = new HashSet<string>(wantedPaths);
-
-            var unwantedCacheEntries = imagesByPath.Where(kv =>
-                !wantedPathsSet.Contains(kv.Key) && kv.Value.IsCompleted).ToList();
-            foreach (var entry in unwantedCacheEntries)
-            {
-                entry.Value.Result.Unref(); // TODO bug, may still being used by the window
-                Console.WriteLine($"-{entry.Key}");
-                imagesByPath.Remove(entry.Key);
-            }
-
-            foreach (var path in wantedPaths)
+            foreach (var path in wantedPaths.Reverse<string>())
                 LoadAsync(path);
         }
     }

@@ -6,6 +6,7 @@ using System.Drawing;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -41,19 +42,43 @@ namespace CompetititiveCullingAlgorithm
             imageCache.ReplaceCache(nextPhotos.ToList());
         }
 
+        class ImageLoadRequest
+        {
+            public ImageCache.RefCountedImage RcImage;
+            public CancellationTokenSource CancellationTokenSource;
+
+            public async void WaitAndSetImage(PictureBox pictureBox)
+            {
+                Console.WriteLine($">{RcImage.Path}");
+                var image = await RcImage.Task;
+                if (CancellationTokenSource.Token.IsCancellationRequested)
+                    return;
+                Console.WriteLine($"!{RcImage.Path}");
+                pictureBox.Image = image;
+            }
+        }
+
         private void UpdatePictureBoxWithPhoto(PictureBox pictureBox, string photoPath)
         {
+            var oldRequest = (ImageLoadRequest) pictureBox.Tag;
+            if (oldRequest?.RcImage.Path == photoPath)
+                return;
+
+            // Don't continue showing the old picture
             pictureBox.Image = null;
-            ImageCache.RefCountedImage previousImage = (ImageCache.RefCountedImage) pictureBox.Tag;
-            previousImage?.Unref();
             pictureBox.Tag = null;
-            
-            imageCache.LoadAsync(photoPath).ContinueWith(image =>
+            // If the old picture was not loaded yet, don't show it when it finishes loading.
+            oldRequest?.CancellationTokenSource.Cancel();
+            // We don't need the picture anymore, dispose of the bitmap if it has no more holders.
+            oldRequest?.RcImage.Unref();
+
+            var newRequest = new ImageLoadRequest
             {
-                ImageCache.RefCountedImage img = image.Result.Ref();
-                pictureBox.Tag = img;
-                pictureBox.Image = img.Image;
-            }, TaskScheduler.FromCurrentSynchronizationContext());
+                RcImage = imageCache.LoadAsync(photoPath).Ref(),
+                CancellationTokenSource = new CancellationTokenSource()
+            };
+            newRequest.WaitAndSetImage(pictureBox);
+            pictureBox.Tag = (ImageLoadRequest) newRequest;
         }
 
         private void Tournament_NewPageEvent(TournamentController.IPageUIClient page)

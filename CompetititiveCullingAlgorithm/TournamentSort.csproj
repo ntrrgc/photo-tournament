@@ -55,6 +55,7 @@
     <Compile Include="IAsyncComparator.cs" />
     <Compile Include="IColdFactory.cs" />
     <Compile Include="ImageCache.cs" />
+    <Compile Include="LRUCache.cs" />
     <Compile Include="MainWindow.cs">
       <SubType>Form</SubType>
     </Compile>

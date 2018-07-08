@@ -106,8 +106,11 @@ namespace CompetititiveCullingAlgorithm
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     T itemA = (await CompetitorA.BestNodeAsync(comparator, cancellationToken)).Item;
+                    cancellationToken.ThrowIfCancellationRequested();
                     T itemB = (await CompetitorB.BestNodeAsync(comparator, cancellationToken)).Item;
+                    cancellationToken.ThrowIfCancellationRequested();
                     BestCompetitor = (await comparator.CompareAsync(itemA, itemB, cancellationToken)) > 0 ? CompetitorA : CompetitorB;
+                    cancellationToken.ThrowIfCancellationRequested();
                 }
                 return await BestCompetitor.BestNodeAsync(comparator, cancellationToken);
             }
@@ -319,7 +322,7 @@ namespace CompetititiveCullingAlgorithm
             {
                 LeafNode winnerNode = await rootNode.BestNodeAsync(comparator, cancellationToken);
                 T winnerItem = winnerNode.Item;
-                NewWinnerEvent(place, winnerItem);
+                NewWinnerEvent?.Invoke(place, winnerItem);
                 rankingWinners.Add(winnerItem);
                 //System.Console.WriteLine($"Winner: {winnerItem} Comparisons: {comparisonCount}");
 
