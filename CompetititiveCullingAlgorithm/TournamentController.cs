@@ -73,7 +73,7 @@ namespace CompetititiveCullingAlgorithm
 
             private TournamentController Controller { get; }
 
-            public Task<int> CompareAsync(string item, string other)
+            public Task<int> CompareAsync(string item, string other, CancellationToken cancellationToken)
             {
                 Controller.PreloadPhotosAdvicedEvent?.Invoke(
                     Controller.Tournament.PredictItemsWorthPreloading().ToList());

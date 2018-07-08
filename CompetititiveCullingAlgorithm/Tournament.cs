@@ -21,14 +21,8 @@ namespace CompetititiveCullingAlgorithm
         [DataContract]
         abstract class Node
         {
-            /** Traverse the tree filling outList with the items that will be compared next, in order
-             * (first in the list is compared the first and so on).
-             * In the case of the items being photos which take 2 seconds to load, using this lists it's 
-             * possible to preload them in advance so that while the user thinks about a comparison, the
-             * photos for the next comparison are being loaded. */
-            public abstract void PopulateItemsWorthPreloading(List<T> outList);
             public abstract void ForEachLeafNode(Action<LeafNode> action);
-            public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken);
+            public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken cancellationToken);
             public abstract Node DeepClone();
             [DataMember]
             public BracketNode Parent { get; set; }
@@ -45,7 +39,7 @@ namespace CompetititiveCullingAlgorithm
             [DataMember()]
             public readonly T Item;
 
-            public override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken)
+            public override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
             {
                 return Task.FromResult(this);
             }
@@ -53,13 +47,6 @@ namespace CompetititiveCullingAlgorithm
             public override void ForEachLeafNode(Action<LeafNode> action)
             {
                 action.Invoke(this);
-            }
-
-            public override void PopulateItemsWorthPreloading(List<T> outList)
-            {
-                // If I'm called it's because my parent BracketNode doesn't know if I'm better than my
-                // sibling, hence our pair will be shown ande therefore it's worth preloading.
-                outList.Add(Item);
             }
 
             public override Node DeepClone()
@@ -113,14 +100,14 @@ namespace CompetititiveCullingAlgorithm
                     Parent.OnDroppedCompetitor();
             }
 
-            public async override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken)
+            public async override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
             {
                 if (BestCompetitor == null)
                 {
-                    cancellationToken?.ThrowIfCancellationRequested();
+                    cancellationToken.ThrowIfCancellationRequested();
                     T itemA = (await CompetitorA.BestNodeAsync(comparator, cancellationToken)).Item;
                     T itemB = (await CompetitorB.BestNodeAsync(comparator, cancellationToken)).Item;
-                    BestCompetitor = (await comparator.CompareAsync(itemA, itemB)) > 0 ? CompetitorA : CompetitorB;
+                    BestCompetitor = (await comparator.CompareAsync(itemA, itemB, cancellationToken)) > 0 ? CompetitorA : CompetitorB;
                 }
                 return await BestCompetitor.BestNodeAsync(comparator, cancellationToken);
             }
@@ -133,15 +120,6 @@ namespace CompetititiveCullingAlgorithm
                     return CompetitorA;
                 else
                     throw new Exception("Unknown node provided.");
-            }
-
-            public override void PopulateItemsWorthPreloading(List<T> outList)
-            {
-                if (BestCompetitor == null)
-                {
-                    CompetitorA.PopulateItemsWorthPreloading(outList);
-                    CompetitorB.PopulateItemsWorthPreloading(outList);
-                }
             }
 
             public override void ForEachLeafNode(Action<LeafNode> action)
@@ -170,7 +148,7 @@ namespace CompetititiveCullingAlgorithm
             string NodeToString(Node node)
             {
                 if (node is LeafNode)
-                    return node.BestNodeAsync(comparator, null).ToString();
+                    return ((LeafNode)node).Item.ToString();
                 else
                     return $"B{++bracketCounter}";
             }
@@ -378,11 +356,59 @@ namespace CompetititiveCullingAlgorithm
             return new SavedState(this);
         }
 
+        class RiggedAsyncComparator : IAsyncComparator<T>
+        {
+            public RiggedAsyncComparator(List<int> decisionPath, List<List<T>> itemsShownByDepthLevel, CancellationTokenSource cancellationSource)
+            {
+                this.decisionPath = decisionPath;
+                this.itemsShownByDepthLevel = itemsShownByDepthLevel;
+                this.cancellationSource = cancellationSource;
+            }
+            List<int> decisionPath;
+            private readonly List<List<T>> itemsShownByDepthLevel;
+            private readonly CancellationTokenSource cancellationSource;
+            int nextDecisionIndex = 0;
+
+            public Task<int> CompareAsync(T item, T other, CancellationToken cancellationToken)
+            {
+                if (!itemsShownByDepthLevel[nextDecisionIndex].Contains(item))
+                    itemsShownByDepthLevel[nextDecisionIndex].Add(item);
+                if (!itemsShownByDepthLevel[nextDecisionIndex].Contains(other))
+                    itemsShownByDepthLevel[nextDecisionIndex].Add(other);
+
+                if (nextDecisionIndex < decisionPath.Count)
+                {
+                    return Task.FromResult(decisionPath[nextDecisionIndex++]);
+                }
+                else
+                {
+                    cancellationSource.Cancel();
+                    return Task.FromCanceled<int>(cancellationToken);
+                }
+            }
+        }
+
         public List<T> PredictItemsWorthPreloading()
         {
-            List<T> ret = new List<T>();
-            rootNode.PopulateItemsWorthPreloading(ret);
-            return ret;
+            const int maxDepth = 3;
+            List<List<T>> itemsShownByDepthLevel = Enumerable.Range(0, maxDepth).Select(_ => new List<T>()).ToList();
+            List<List<int>> decisionPaths = new List<List<int>>
+            {
+                new List<int> { -1, -1 },
+                new List<int> { -1,  1 },
+                new List<int> {  1, -1 },
+                new List<int> {  1,  1 },
+            };
+
+            SavedState startState = SaveState();
+            foreach (List<int> decisionPath in decisionPaths)
+            {
+                var cancellationSource = new CancellationTokenSource();
+                var task = startState.Instantiate().CalculateTopN(new RiggedAsyncComparator(decisionPath, itemsShownByDepthLevel, cancellationSource),
+                    cancellationSource.Token);
+                Debug.Assert(task.Status == TaskStatus.RanToCompletion || task.Status == TaskStatus.Canceled);
+            }
+            return itemsShownByDepthLevel.SelectMany(x => x).ToList();
         }
 
     }

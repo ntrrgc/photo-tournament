@@ -38,7 +38,7 @@ namespace CompetititiveCullingAlgorithm
         private void Controller_PreloadPhotosAdvicedEvent(List<string> nextPhotos)
         {
             Console.WriteLine("Advice");
-            imageCache.ReplaceCache(nextPhotos.Take(4).ToList());
+            imageCache.ReplaceCache(nextPhotos.ToList());
         }
 
         private void UpdatePictureBoxWithPhoto(PictureBox pictureBox, string photoPath)
