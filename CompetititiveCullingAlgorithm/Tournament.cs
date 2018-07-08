@@ -15,7 +15,6 @@ using static TournamentSort.Program;
 
 namespace CompetititiveCullingAlgorithm
 {
-    [DataContract()]
     class Tournament<T>
     {
         #region Node tree
@@ -30,6 +29,7 @@ namespace CompetititiveCullingAlgorithm
             public abstract void PopulateItemsWorthPreloading(List<T> outList);
             public abstract void ForEachLeafNode(Action<LeafNode> action);
             public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken);
+            public abstract Node DeepClone();
             [DataMember]
             public BracketNode Parent { get; set; }
         }
@@ -60,6 +60,11 @@ namespace CompetititiveCullingAlgorithm
                 // If I'm called it's because my parent BracketNode doesn't know if I'm better than my
                 // sibling, hence our pair will be shown ande therefore it's worth preloading.
                 outList.Add(Item);
+            }
+
+            public override Node DeepClone()
+            {
+                return new LeafNode(Item);
             }
         }
 
@@ -144,6 +149,16 @@ namespace CompetititiveCullingAlgorithm
                 CompetitorA.ForEachLeafNode(action);
                 CompetitorB.ForEachLeafNode(action);
             }
+
+            public override Node DeepClone()
+            {
+                BracketNode clone = new BracketNode(CompetitorA.DeepClone(), CompetitorB.DeepClone());
+                if (BestCompetitor == CompetitorA)
+                    clone.BestCompetitor = clone.CompetitorA;
+                else if (BestCompetitor == CompetitorB)
+                    clone.BestCompetitor = clone.CompetitorB;
+                return clone;
+            }
         }
 
         static void PlotBrackets(IAsyncComparator<T> comparator, Node topMostRoot)
@@ -205,12 +220,92 @@ namespace CompetititiveCullingAlgorithm
         public delegate void NewWinnerEventHandler(int place, T item);
         public event NewWinnerEventHandler NewWinnerEvent;
 
-        [DataMember()]
-        public readonly int TotalPlaces;
-        [DataMember()]
+        [DataContract()]
+        public class SavedState
+        {
+            public SavedState(Tournament<T> tournament)
+            {
+                TotalPlaces = tournament.TotalPlaces;
+                RootNode = tournament.rootNode.DeepClone();
+                RankingWinners = new List<T>(tournament.rankingWinners);
+            }
+
+            public Tournament<T> Instantiate()
+            {
+                return new Tournament<T>
+                {
+                    TotalPlaces = TotalPlaces,
+                    rootNode = RootNode.DeepClone(),
+                    rankingWinners = RankingWinners
+                };
+            }
+
+            #region Serialization methods
+            private static List<Type> SerializationKnownTypes { get { return new List<Type> { typeof(BracketNode), typeof(LeafNode) }; } }
+
+            public void SaveToFile(string path)
+            {
+                var serializer = new DataContractSerializer(typeof(SavedState), new DataContractSerializerSettings
+                {
+                    KnownTypes = SerializationKnownTypes,
+                    PreserveObjectReferences = true
+                });
+                var file = File.Open(path, FileMode.Create);
+                try
+                {
+                    var writer = XmlWriter.Create(file, new XmlWriterSettings
+                    {
+                        OmitXmlDeclaration = true,
+                        Encoding = Encoding.UTF8,
+                        Indent = true
+                    });
+                    serializer.WriteObject(writer, this);
+                    writer.Close();
+                }
+                finally
+                {
+                    file.Close();
+                }
+            }
+
+            public static SavedState LoadFromFile(string path)
+            {
+                var serializer = new DataContractSerializer(typeof(SavedState), new DataContractSerializerSettings
+                {
+                    KnownTypes = SerializationKnownTypes,
+                    PreserveObjectReferences = true
+                });
+                var file = File.OpenRead(path);
+                try
+                {
+                    var reader = XmlDictionaryReader.CreateTextReader(file, new XmlDictionaryReaderQuotas());
+                    var ret = (SavedState) serializer.ReadObject(reader);
+                    reader.Close();
+                    return ret;
+                }
+                finally
+                {
+                    file.Close();
+                }
+            }
+            #endregion
+
+            [DataMember()]
+            private readonly int TotalPlaces;
+            [DataMember()]
+            private readonly Node RootNode;
+            [DataMember()]
+            private readonly List<T> RankingWinners = new List<T>();
+        }
+
+        public int TotalPlaces;
         private Node rootNode;
-        [DataMember()]
         List<T> rankingWinners = new List<T>();
+
+        private Tournament()
+        {
+            // for instantiation by SavedState only
+        }
 
         internal Tournament(List<T> items, int totalPlaces)
         {
@@ -278,6 +373,11 @@ namespace CompetititiveCullingAlgorithm
             return rankingWinners;
         }
 
+        public SavedState SaveState()
+        {
+            return new SavedState(this);
+        }
+
         public List<T> PredictItemsWorthPreloading()
         {
             List<T> ret = new List<T>();
@@ -285,6 +385,5 @@ namespace CompetititiveCullingAlgorithm
             return ret;
         }
 
-        public List<Type> SerializationKnownTypes { get { return new List<Type> { typeof(BracketNode), typeof(LeafNode) }; } }
     }
 }

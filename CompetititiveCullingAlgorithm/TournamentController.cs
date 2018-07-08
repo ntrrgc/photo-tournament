@@ -121,46 +121,12 @@ namespace CompetititiveCullingAlgorithm
 
         public void Save(string path)
         {
-            var ser = new DataContractSerializer(typeof(Tournament<string>), new DataContractSerializerSettings
-            {
-                KnownTypes = Tournament.SerializationKnownTypes,
-                PreserveObjectReferences = true
-            });
-            var file = File.OpenWrite(path);
-            try
-            {
-                var writer = XmlWriter.Create(file, new XmlWriterSettings
-                {
-                    OmitXmlDeclaration = true,
-                    Encoding = Encoding.UTF8,
-                    Indent = true
-                });
-                ser.WriteObject(writer, Tournament);
-                writer.Close();
-            } finally {
-                file.Close();
-            }
+            Tournament.SaveState().SaveToFile(path);
         }
 
         public void Load(string path)
         {
-            var ser = new DataContractSerializer(typeof(Tournament<string>), new DataContractSerializerSettings
-            {
-                KnownTypes = Tournament.SerializationKnownTypes,
-                PreserveObjectReferences = true
-            });
-            var file = File.OpenRead(path);
-            try
-            {
-                var reader = XmlDictionaryReader.CreateTextReader(file, new XmlDictionaryReaderQuotas());
-                var readTournament = (Tournament<PhotoPath>) ser.ReadObject(reader);
-                ReplaceTournament(readTournament);
-                reader.Close();
-            }
-            finally
-            {
-                file.Close();
-            }
+            ReplaceTournament(Tournament<PhotoPath>.SavedState.LoadFromFile(path).Instantiate());
         }
 
         private void ReplaceTournament(Tournament<PhotoPath> newTournament)
