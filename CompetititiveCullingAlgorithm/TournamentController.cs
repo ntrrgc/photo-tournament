@@ -3,9 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace CompetititiveCullingAlgorithm
 {
@@ -43,6 +47,8 @@ namespace CompetititiveCullingAlgorithm
         }
 
         private Tournament<PhotoPath> Tournament;
+        private CancellationTokenSource tournamentTaskToken;
+        private Task tournamentTask;
 
         public IPageUIClient CurrentPage { get; private set; }
 
@@ -88,18 +94,82 @@ namespace CompetititiveCullingAlgorithm
                 .ToList();
         }
 
+        private void StartTournament(Tournament<PhotoPath> tournament)
+        {
+            Tournament = tournament;
+            Tournament.NewWinnerEvent += Tournament_NewWinnerEvent;
+
+            tournamentTaskToken = new CancellationTokenSource();
+            var cancellationToken = tournamentTaskToken.Token;
+            async Task calculateFnAsync()
+            {
+                var bestPhotos = await Tournament.CalculateTopN(new PhotoGUIComparator(this), cancellationToken);
+                CurrentPage = null;
+                TournamentFinishedEvent(bestPhotos);
+            }
+            tournamentTask = calculateFnAsync();
+        }
+
         public void StartNewTournament(string sourcePhotoFolder, int totalPlaces)
         {
             List<PhotoPath> photos = FindPhotosInPath(sourcePhotoFolder);
-            Tournament = new Tournament<PhotoPath>(new PhotoGUIComparator(this), photos, totalPlaces);
-            Tournament.NewWinnerEvent += Tournament_NewWinnerEvent; ;
-            Tournament.CalculateTopN().ContinueWith(bestPhotosTask => {
-                var bestPhotos = bestPhotosTask.Result;
-                CurrentPage = null;
-                TournamentFinishedEvent(bestPhotos);
-            }, TaskContinuationOptions.ExecuteSynchronously);
+            StartTournament(new Tournament<PhotoPath>(photos, totalPlaces));
+
             if (photos.Count > 0)
                 Debug.Assert(CurrentPage != null);
+        }
+
+        public void Save(string path)
+        {
+            var ser = new DataContractSerializer(typeof(Tournament<string>), new DataContractSerializerSettings
+            {
+                KnownTypes = Tournament.SerializationKnownTypes,
+                PreserveObjectReferences = true
+            });
+            var file = File.OpenWrite(path);
+            try
+            {
+                var writer = XmlWriter.Create(file, new XmlWriterSettings
+                {
+                    OmitXmlDeclaration = true,
+                    Encoding = Encoding.UTF8,
+                    Indent = true
+                });
+                ser.WriteObject(writer, Tournament);
+                writer.Close();
+            } finally {
+                file.Close();
+            }
+        }
+
+        public void Load(string path)
+        {
+            var ser = new DataContractSerializer(typeof(Tournament<string>), new DataContractSerializerSettings
+            {
+                KnownTypes = Tournament.SerializationKnownTypes,
+                PreserveObjectReferences = true
+            });
+            var file = File.OpenRead(path);
+            try
+            {
+                var reader = XmlDictionaryReader.CreateTextReader(file, new XmlDictionaryReaderQuotas());
+                var readTournament = (Tournament<PhotoPath>) ser.ReadObject(reader);
+                ReplaceTournament(readTournament);
+                reader.Close();
+            }
+            finally
+            {
+                file.Close();
+            }
+        }
+
+        private void ReplaceTournament(Tournament<PhotoPath> newTournament)
+        {
+            this.tournamentTaskToken.Cancel();
+            Tournament.NewWinnerEvent -= Tournament_NewWinnerEvent;
+            this.CurrentPage = null;
+
+            StartTournament(newTournament);
         }
 
         private void Tournament_NewWinnerEvent(int place, PhotoPath item)

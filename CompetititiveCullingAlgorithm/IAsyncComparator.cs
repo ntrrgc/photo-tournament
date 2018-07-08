@@ -2,7 +2,7 @@
 
 namespace CompetititiveCullingAlgorithm
 {
-    internal interface IAsyncComparator<T>
+    public interface IAsyncComparator<T>
     {
         Task<int> CompareAsync(T item, T other);
     }

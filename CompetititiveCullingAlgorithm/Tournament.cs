@@ -6,17 +6,20 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using static TournamentSort.Program;
 
 namespace CompetititiveCullingAlgorithm
 {
-    [Serializable()]
+    [DataContract()]
     class Tournament<T>
     {
         #region Node tree
+        [DataContract]
         abstract class Node
         {
             /** Traverse the tree filling outList with the items that will be compared next, in order
@@ -26,10 +29,12 @@ namespace CompetititiveCullingAlgorithm
              * photos for the next comparison are being loaded. */
             public abstract void PopulateItemsWorthPreloading(List<T> outList);
             public abstract void ForEachLeafNode(Action<LeafNode> action);
-            public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator);
+            public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken);
+            [DataMember]
             public BracketNode Parent { get; set; }
         }
 
+        [DataContract]
         class LeafNode : Node
         {
             public LeafNode(T item)
@@ -37,9 +42,10 @@ namespace CompetititiveCullingAlgorithm
                 Item = item;
             }
 
-            public T Item { get; }
+            [DataMember()]
+            public readonly T Item;
 
-            public override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator)
+            public override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken)
             {
                 return Task.FromResult(this);
             }
@@ -57,6 +63,7 @@ namespace CompetititiveCullingAlgorithm
             }
         }
 
+        [DataContract]
         class BracketNode : Node
         {
             public BracketNode(Node competitorA, Node competitorB)
@@ -70,8 +77,11 @@ namespace CompetititiveCullingAlgorithm
                 competitorA.Parent = competitorB.Parent = this;
             }
 
+            [DataMember()]
             public Node CompetitorA { get; private set; }
+            [DataMember()]
             public Node CompetitorB { get; private set; }
+            [DataMember()]
             public Node BestCompetitor { get; private set; }
 
             public void ReplaceWinnerChildBracketWithNode(Node replacement)
@@ -98,15 +108,16 @@ namespace CompetititiveCullingAlgorithm
                     Parent.OnDroppedCompetitor();
             }
 
-            public async override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator)
+            public async override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken? cancellationToken)
             {
                 if (BestCompetitor == null)
                 {
-                    T itemA = (await CompetitorA.BestNodeAsync(comparator)).Item;
-                    T itemB = (await CompetitorB.BestNodeAsync(comparator)).Item;
+                    cancellationToken?.ThrowIfCancellationRequested();
+                    T itemA = (await CompetitorA.BestNodeAsync(comparator, cancellationToken)).Item;
+                    T itemB = (await CompetitorB.BestNodeAsync(comparator, cancellationToken)).Item;
                     BestCompetitor = (await comparator.CompareAsync(itemA, itemB)) > 0 ? CompetitorA : CompetitorB;
                 }
-                return await BestCompetitor.BestNodeAsync(comparator);
+                return await BestCompetitor.BestNodeAsync(comparator, cancellationToken);
             }
 
             public Node CompetitorOtherThan(Node node)
@@ -144,7 +155,7 @@ namespace CompetititiveCullingAlgorithm
             string NodeToString(Node node)
             {
                 if (node is LeafNode)
-                    return node.BestNodeAsync(comparator).ToString();
+                    return node.BestNodeAsync(comparator, null).ToString();
                 else
                     return $"B{++bracketCounter}";
             }
@@ -194,27 +205,20 @@ namespace CompetititiveCullingAlgorithm
         public delegate void NewWinnerEventHandler(int place, T item);
         public event NewWinnerEventHandler NewWinnerEvent;
 
-        public IAsyncComparator<T> Comparator { get; }
-        public List<T> Items { get; }
-        public int TotalPlaces { get; }
+        [DataMember()]
+        public readonly int TotalPlaces;
+        [DataMember()]
         private Node rootNode;
+        [DataMember()]
         List<T> rankingWinners = new List<T>();
 
-        
-        public struct SavedState
-        {
-            
-        }
-
-        internal Tournament(IAsyncComparator<T> comparator, List<T> items, int totalPlaces)
+        internal Tournament(List<T> items, int totalPlaces)
         {
             totalPlaces = Math.Min(totalPlaces, items.Count);
             Debug.Assert(items.Count > 0);
-            Comparator = comparator;
-            Items = items;
             TotalPlaces = totalPlaces;
 
-            IReadOnlyList<Node> baseLevel = Items.Select(item => new LeafNode(item)).ToList();
+            IReadOnlyList<Node> baseLevel = items.Select(item => new LeafNode(item)).ToList();
             while (baseLevel.Count > 1)
             {
                 List<Node> newLevel = new List<Node>();
@@ -236,11 +240,11 @@ namespace CompetititiveCullingAlgorithm
             rootNode = baseLevel[0]; // The only remaining node is the root node
         }
 
-        public async Task<List<T>> CalculateTopN()
+        public async Task<List<T>> CalculateTopN(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
         {
             for (int place = 1; place <= TotalPlaces; place++)
             {
-                LeafNode winnerNode = await rootNode.BestNodeAsync(Comparator);
+                LeafNode winnerNode = await rootNode.BestNodeAsync(comparator, cancellationToken);
                 T winnerItem = winnerNode.Item;
                 NewWinnerEvent(place, winnerItem);
                 rankingWinners.Add(winnerItem);
@@ -280,5 +284,7 @@ namespace CompetititiveCullingAlgorithm
             rootNode.PopulateItemsWorthPreloading(ret);
             return ret;
         }
+
+        public List<Type> SerializationKnownTypes { get { return new List<Type> { typeof(BracketNode), typeof(LeafNode) }; } }
     }
 }

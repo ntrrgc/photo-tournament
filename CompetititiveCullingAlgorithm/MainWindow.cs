@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -96,6 +97,16 @@ namespace CompetititiveCullingAlgorithm
         private void btnChooseB_Click(object sender, EventArgs e)
         {
             controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
+        }
+
+        private void toolStripButton2_Click(object sender, EventArgs e)
+        {
+            controller.Save(Application.UserAppDataPath + @"\quick-save.xml");
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            controller.Load(Application.UserAppDataPath + @"\quick-save.xml");
         }
     }
 }
