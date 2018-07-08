@@ -7,14 +7,16 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Soap;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 
 namespace TournamentSort
 {
-    partial class Program
+    public partial class Program
     {
         abstract class Node<T> where T : IComparable<T>
         {

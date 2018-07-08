@@ -13,7 +13,8 @@ using static TournamentSort.Program;
 
 namespace CompetititiveCullingAlgorithm
 {
-    class Tournament<T> where T: IAsyncComparable<T>
+    [Serializable()]
+    class Tournament<T>
     {
         #region Node tree
         abstract class Node
@@ -25,7 +26,7 @@ namespace CompetititiveCullingAlgorithm
              * photos for the next comparison are being loaded. */
             public abstract void PopulateItemsWorthPreloading(List<T> outList);
             public abstract void ForEachLeafNode(Action<LeafNode> action);
-            public abstract Task<LeafNode> BestNodeAsync();
+            public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator);
             public BracketNode Parent { get; set; }
         }
 
@@ -38,7 +39,7 @@ namespace CompetititiveCullingAlgorithm
 
             public T Item { get; }
 
-            public override Task<LeafNode> BestNodeAsync()
+            public override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator)
             {
                 return Task.FromResult(this);
             }
@@ -97,15 +98,15 @@ namespace CompetititiveCullingAlgorithm
                     Parent.OnDroppedCompetitor();
             }
 
-            public async override Task<LeafNode> BestNodeAsync()
+            public async override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator)
             {
                 if (BestCompetitor == null)
                 {
-                    T itemA = (await CompetitorA.BestNodeAsync()).Item;
-                    T itemB = (await CompetitorB.BestNodeAsync()).Item;
-                    BestCompetitor = (await itemA.CompareToAsync(itemB)) > 0 ? CompetitorA : CompetitorB;
+                    T itemA = (await CompetitorA.BestNodeAsync(comparator)).Item;
+                    T itemB = (await CompetitorB.BestNodeAsync(comparator)).Item;
+                    BestCompetitor = (await comparator.CompareAsync(itemA, itemB)) > 0 ? CompetitorA : CompetitorB;
                 }
-                return await BestCompetitor.BestNodeAsync();
+                return await BestCompetitor.BestNodeAsync(comparator);
             }
 
             public Node CompetitorOtherThan(Node node)
@@ -134,7 +135,7 @@ namespace CompetititiveCullingAlgorithm
             }
         }
 
-        static void PlotBrackets(Node topMostRoot)
+        static void PlotBrackets(IAsyncComparator<T> comparator, Node topMostRoot)
         {
             Graph graph = Graph.Directed;
 
@@ -143,7 +144,7 @@ namespace CompetititiveCullingAlgorithm
             string NodeToString(Node node)
             {
                 if (node is LeafNode)
-                    return node.BestNodeAsync().ToString();
+                    return node.BestNodeAsync(comparator).ToString();
                 else
                     return $"B{++bracketCounter}";
             }
@@ -193,16 +194,23 @@ namespace CompetititiveCullingAlgorithm
         public delegate void NewWinnerEventHandler(int place, T item);
         public event NewWinnerEventHandler NewWinnerEvent;
 
+        public IAsyncComparator<T> Comparator { get; }
         public List<T> Items { get; }
         public int TotalPlaces { get; }
         private Node rootNode;
         List<T> rankingWinners = new List<T>();
 
-        internal Tournament(List<T> items, int totalPlaces)
+        
+        public struct SavedState
+        {
+            
+        }
+
+        internal Tournament(IAsyncComparator<T> comparator, List<T> items, int totalPlaces)
         {
             totalPlaces = Math.Min(totalPlaces, items.Count);
             Debug.Assert(items.Count > 0);
-
+            Comparator = comparator;
             Items = items;
             TotalPlaces = totalPlaces;
 
@@ -232,7 +240,7 @@ namespace CompetititiveCullingAlgorithm
         {
             for (int place = 1; place <= TotalPlaces; place++)
             {
-                LeafNode winnerNode = await rootNode.BestNodeAsync();
+                LeafNode winnerNode = await rootNode.BestNodeAsync(Comparator);
                 T winnerItem = winnerNode.Item;
                 NewWinnerEvent(place, winnerItem);
                 rankingWinners.Add(winnerItem);

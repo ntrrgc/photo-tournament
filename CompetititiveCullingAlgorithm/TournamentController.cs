@@ -42,7 +42,7 @@ namespace CompetititiveCullingAlgorithm
             }
         }
 
-        private Tournament<ComparablePhoto> Tournament;
+        private Tournament<PhotoPath> Tournament;
 
         public IPageUIClient CurrentPage { get; private set; }
 
@@ -58,22 +58,20 @@ namespace CompetititiveCullingAlgorithm
         public delegate void PreloadPhotosAdvicedEventHandler(List<PhotoPath> nextPhotos);
         public event PreloadPhotosAdvicedEventHandler PreloadPhotosAdvicedEvent;
 
-        private class ComparablePhoto : IAsyncComparable<ComparablePhoto>
+        private class PhotoGUIComparator: IAsyncComparator<PhotoPath>
         {
-            public ComparablePhoto(TournamentController controller, PhotoPath photoPath)
+            public PhotoGUIComparator(TournamentController controller)
             {
                 Controller = controller;
-                PhotoPath = photoPath;
             }
 
             private TournamentController Controller { get; }
-            public PhotoPath PhotoPath { get; }
 
-            public Task<int> CompareToAsync(ComparablePhoto other)
+            public Task<int> CompareAsync(string item, string other)
             {
                 Controller.PreloadPhotosAdvicedEvent?.Invoke(
-                    Controller.Tournament.PredictItemsWorthPreloading().Select(x => x.PhotoPath).ToList());
-                Page page = new Page(this.PhotoPath, other.PhotoPath);
+                    Controller.Tournament.PredictItemsWorthPreloading().ToList());
+                Page page = new Page(item, other);
                 Controller.CurrentPage = page;
                 Controller.NewPageEvent(page);
                 return page.BetterPhotoPromise.Task.ContinueWith(best =>
@@ -93,20 +91,20 @@ namespace CompetititiveCullingAlgorithm
         public void StartNewTournament(string sourcePhotoFolder, int totalPlaces)
         {
             List<PhotoPath> photos = FindPhotosInPath(sourcePhotoFolder);
-            Tournament = new Tournament<ComparablePhoto>(photos.Select(x => new ComparablePhoto(this, x)).ToList(), totalPlaces);
+            Tournament = new Tournament<PhotoPath>(new PhotoGUIComparator(this), photos, totalPlaces);
             Tournament.NewWinnerEvent += Tournament_NewWinnerEvent; ;
             Tournament.CalculateTopN().ContinueWith(bestPhotosTask => {
                 var bestPhotos = bestPhotosTask.Result;
                 CurrentPage = null;
-                TournamentFinishedEvent(bestPhotos.Select(x => x.PhotoPath).ToList());
+                TournamentFinishedEvent(bestPhotos);
             }, TaskContinuationOptions.ExecuteSynchronously);
             if (photos.Count > 0)
                 Debug.Assert(CurrentPage != null);
         }
 
-        private void Tournament_NewWinnerEvent(int place, ComparablePhoto item)
+        private void Tournament_NewWinnerEvent(int place, PhotoPath item)
         {
-            NewWinnerEvent(place, item.PhotoPath);
+            NewWinnerEvent(place, item);
         }
     }
 }

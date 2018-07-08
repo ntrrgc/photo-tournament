@@ -91,7 +91,7 @@ namespace CompetititiveCullingAlgorithm
                 !wantedPathsSet.Contains(kv.Key) && kv.Value.IsCompleted).ToList();
             foreach (var entry in unwantedCacheEntries)
             {
-                entry.Value.Result.Unref();
+                entry.Value.Result.Unref(); // TODO bug, may still being used by the window
                 Console.WriteLine($"-{entry.Key}");
                 imagesByPath.Remove(entry.Key);
             }

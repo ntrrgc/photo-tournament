@@ -45,6 +45,7 @@ namespace CompetititiveCullingAlgorithm
             pictureBox.Image = null;
             ImageCache.RefCountedImage previousImage = (ImageCache.RefCountedImage) pictureBox.Tag;
             previousImage?.Unref();
+            pictureBox.Tag = null;
             
             imageCache.LoadAsync(photoPath).ContinueWith(image =>
             {
