@@ -167,11 +167,13 @@ namespace CompetititiveCullingAlgorithm
         private void btnUndo_Click(object sender, EventArgs e)
         {
             controller.UndoStack.Undo();
+            UpdateGUI();
         }
 
         private void btnRedo_Click(object sender, EventArgs e)
         {
             controller.UndoStack.Redo();
+            UpdateGUI();
         }
     }
 }
