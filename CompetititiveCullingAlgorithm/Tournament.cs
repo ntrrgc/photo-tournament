@@ -314,6 +314,7 @@ namespace CompetititiveCullingAlgorithm
         public int NumItems;
 
         public IReadOnlyCollection<T> RankingWinners { get => rankingWinners.AsReadOnly(); }
+        public bool Finished { get => TotalPlaces == rankingWinners.Count(); }
 
         public int NextWinnerStepsMax { get; private set; }
         public int NextWinnerStepsDone { get; private set; }
@@ -368,7 +369,7 @@ namespace CompetititiveCullingAlgorithm
 
         public async Task<List<T>> CalculateTopN(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
         {
-            for (int place = 1; place <= TotalPlaces; place++)
+            for (int place = rankingWinners.Count + 1; place <= TotalPlaces; place++)
             {
                 LeafNode winnerNode = await rootNode.BestNodeAsync(this, comparator, cancellationToken);
                 T winnerItem = winnerNode.Item;

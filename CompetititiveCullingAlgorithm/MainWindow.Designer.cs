@@ -40,7 +40,7 @@
             this.imgPhotoA = new System.Windows.Forms.PictureBox();
             this.imgPhotoB = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
-            this.label1 = new System.Windows.Forms.Label();
+            this.lblHint = new System.Windows.Forms.Label();
             this.btnChooseA = new System.Windows.Forms.Button();
             this.btnChooseB = new System.Windows.Forms.Button();
             this.pgrNextWinner = new System.Windows.Forms.ProgressBar();
@@ -156,7 +156,7 @@
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Controls.Add(this.imgPhotoA, 0, 1);
             this.tableLayoutPanel1.Controls.Add(this.imgPhotoB, 1, 1);
-            this.tableLayoutPanel1.Controls.Add(this.label1, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.lblHint, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnChooseA, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.btnChooseB, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.pgrNextWinner, 0, 3);
@@ -175,15 +175,15 @@
             // 
             // label1
             // 
-            this.label1.AutoSize = true;
-            this.tableLayoutPanel1.SetColumnSpan(this.label1, 2);
-            this.label1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.label1.Location = new System.Drawing.Point(3, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(916, 20);
-            this.label1.TabIndex = 0;
-            this.label1.Text = "Which picture fits better in the album?";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            this.lblHint.AutoSize = true;
+            this.tableLayoutPanel1.SetColumnSpan(this.lblHint, 2);
+            this.lblHint.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblHint.Location = new System.Drawing.Point(3, 0);
+            this.lblHint.Name = "label1";
+            this.lblHint.Size = new System.Drawing.Size(916, 20);
+            this.lblHint.TabIndex = 0;
+            this.lblHint.Text = "Which picture fits better in the album?";
+            this.lblHint.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             // 
             // btnChooseA
             // 
@@ -287,7 +287,7 @@
         private System.Windows.Forms.PictureBox imgPhotoA;
         private System.Windows.Forms.PictureBox imgPhotoB;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
-        private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Label lblHint;
         private System.Windows.Forms.Button btnChooseA;
         private System.Windows.Forms.Button btnChooseB;
         private System.Windows.Forms.ToolStripButton btnQuickLoad;

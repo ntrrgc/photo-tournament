@@ -75,6 +75,9 @@ namespace CompetititiveCullingAlgorithm
             // We don't need the picture anymore, dispose of the bitmap if it has no more holders.
             oldRequest?.RcImage.Unref();
 
+            if (photoPath == null)
+                return; // leave the picture blank, by request
+
             var newRequest = new ImageLoadRequest
             {
                 RcImage = imageCache.LoadAsync(photoPath).Ref(),
@@ -86,12 +89,15 @@ namespace CompetititiveCullingAlgorithm
 
         private void Tournament_NewPageEvent(TournamentController.IPageUIClient page)
         {
+            lblHint.Text = "";
+            lblStatus.Text = "";
             UpdateGUI();
         }
 
         private void Tournament_TournamentFinishedEvent(List<PhotoPath> bestPhotos)
         {
-            label1.Text = $"Best photos are: {String.Join(", ", bestPhotos.Select(x => x.ToString()))}";
+            lblHint.Text = $"A selection of the best {bestPhotos.Count} photos is complete. You can export it now.";
+            UpdateGUI();
         }
 
         private void Tournament_NewWinnerEvent(int place, PhotoPath item)
@@ -155,12 +161,12 @@ namespace CompetititiveCullingAlgorithm
         {
             btnQuickLoad.Enabled = controller.QuickSaveExists;
             btnChooseA.Enabled = btnChooseB.Enabled = controller.CurrentPage != null && BothImagesLoaded;
-            UpdatePictureBoxWithPhoto(imgPhotoA, controller.CurrentPage.PhotoA);
-            UpdatePictureBoxWithPhoto(imgPhotoB, controller.CurrentPage.PhotoB);
+            UpdatePictureBoxWithPhoto(imgPhotoA, controller.CurrentPage?.PhotoA);
+            UpdatePictureBoxWithPhoto(imgPhotoB, controller.CurrentPage?.PhotoB);
             pgrGlobal.Maximum = controller.Tournament.GlobalStepsMax;
-            pgrGlobal.Value = controller.Tournament.GlobalStepsDone;
+            pgrGlobal.Value = controller.Tournament.Finished ? pgrGlobal.Maximum : controller.Tournament.GlobalStepsDone;
             pgrNextWinner.Maximum = controller.Tournament.NextWinnerStepsMax;
-            pgrNextWinner.Value = controller.Tournament.NextWinnerStepsDone;
+            pgrNextWinner.Value = controller.Tournament.Finished ? pgrNextWinner.Maximum : controller.Tournament.NextWinnerStepsDone;
             btnUndo.Enabled = controller.UndoStack.CanUndo;
             btnRedo.Enabled = controller.UndoStack.CanRedo;
             btnExportUnsorted.Enabled = btnExportByRank.Enabled = controller.Tournament.RankingWinners.Count > 0;

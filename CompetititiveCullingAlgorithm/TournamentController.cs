@@ -187,6 +187,7 @@ namespace CompetititiveCullingAlgorithm
 
         private void Tournament_NewWinnerEvent(int place, PhotoPath item)
         {
+            currentPage = null;
             NewWinnerEvent(place, item);
         }
 
