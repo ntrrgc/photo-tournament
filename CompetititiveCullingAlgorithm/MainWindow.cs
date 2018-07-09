@@ -106,25 +106,25 @@ namespace CompetititiveCullingAlgorithm
             if (e.KeyCode == Keys.Left || e.KeyCode == Keys.D1)
             {
                 if (btnChooseA.Enabled)
-                    controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoAIsBetter);
+                    controller.DoChoosePhotoUndoable(TournamentController.PhotoChoice.PhotoAIsBetter);
                 e.Handled = true;
             }
             else if (e.KeyCode == Keys.Right || e.KeyCode == Keys.D2)
             {
                 if (btnChooseB.Enabled)
-                    controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
+                    controller.DoChoosePhotoUndoable(TournamentController.PhotoChoice.PhotoBIsBetter);
                 e.Handled = true;
             }
         }
 
         private void btnChooseA_Click(object sender, EventArgs e)
         {
-            controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoAIsBetter);
+            controller.DoChoosePhotoUndoable(TournamentController.PhotoChoice.PhotoAIsBetter);
         }
 
         private void btnChooseB_Click(object sender, EventArgs e)
         {
-            controller.CurrentPage.Choose(TournamentController.PhotoChoice.PhotoBIsBetter);
+            controller.DoChoosePhotoUndoable(TournamentController.PhotoChoice.PhotoBIsBetter);
         }
 
         private void toolStripButton2_Click(object sender, EventArgs e)
@@ -135,6 +135,7 @@ namespace CompetititiveCullingAlgorithm
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             controller.LoadQuick();
+            UpdateGUI();
         }
 
         private bool BothImagesLoaded
@@ -159,6 +160,18 @@ namespace CompetititiveCullingAlgorithm
             pgrGlobal.Value = controller.Tournament.GlobalStepsDone;
             pgrNextWinner.Maximum = controller.Tournament.NextWinnerStepsMax;
             pgrNextWinner.Value = controller.Tournament.NextWinnerStepsDone;
+            btnUndo.Enabled = controller.UndoStack.CanUndo;
+            btnRedo.Enabled = controller.UndoStack.CanRedo;
+        }
+
+        private void btnUndo_Click(object sender, EventArgs e)
+        {
+            controller.UndoStack.Undo();
+        }
+
+        private void btnRedo_Click(object sender, EventArgs e)
+        {
+            controller.UndoStack.Redo();
         }
     }
 }

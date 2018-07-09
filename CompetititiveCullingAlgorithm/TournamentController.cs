@@ -28,7 +28,6 @@ namespace CompetititiveCullingAlgorithm
         {
             PhotoPath PhotoA { get; }
             PhotoPath PhotoB { get; }
-            void Choose(PhotoChoice choice);
         }
 
         private class Page : IPageUIClient
@@ -50,8 +49,10 @@ namespace CompetititiveCullingAlgorithm
         public Tournament<PhotoPath> Tournament { get; private set; }
         private CancellationTokenSource tournamentTaskToken;
         private Task tournamentTask;
+        public readonly UndoStack UndoStack = new UndoStack();
 
-        public IPageUIClient CurrentPage { get; private set; }
+        private Page currentPage;
+        public IPageUIClient CurrentPage { get => currentPage; }
 
         public delegate void NewWinnerEventHandler(int place, PhotoPath item);
         public event NewWinnerEventHandler NewWinnerEvent;
@@ -65,6 +66,31 @@ namespace CompetititiveCullingAlgorithm
         public delegate void PreloadPhotosAdvicedEventHandler(List<PhotoPath> nextPhotos);
         public event PreloadPhotosAdvicedEventHandler PreloadPhotosAdvicedEvent;
 
+        private class ChoosePhotoUndoable : IUndoable
+        {
+            private readonly TournamentController controller;
+            private readonly PhotoChoice choice;
+            private readonly Tournament<PhotoPath>.SavedState savedState;
+
+            public ChoosePhotoUndoable(TournamentController controller, PhotoChoice choice) {
+                this.controller = controller;
+                this.choice = choice;
+                this.savedState = controller.Tournament.SaveState();
+            }
+
+            public string Name => "Choose photo";
+
+            public void Do()
+            {
+                controller.currentPage.Choose(choice);
+            }
+
+            public void Undo()
+            {
+                controller.ReplaceTournament(savedState.Instantiate());
+            }
+        }
+
         private class PhotoGUIComparator: IAsyncComparator<PhotoPath>
         {
             public PhotoGUIComparator(TournamentController controller)
@@ -74,16 +100,15 @@ namespace CompetititiveCullingAlgorithm
 
             private TournamentController Controller { get; }
 
-            public Task<int> CompareAsync(string item, string other, CancellationToken cancellationToken)
+            public async Task<int> CompareAsync(string item, string other, CancellationToken cancellationToken)
             {
                 Controller.PreloadPhotosAdvicedEvent?.Invoke(
                     Controller.Tournament.PredictItemsWorthPreloading().ToList());
                 Page page = new Page(item, other);
-                Controller.CurrentPage = page;
+                Controller.currentPage = page;
                 Controller.NewPageEvent(page);
-                return page.BetterPhotoPromise.Task.ContinueWith(best =>
-                    best.Result == PhotoChoice.PhotoAIsBetter ? 1 : -1,
-                    TaskContinuationOptions.ExecuteSynchronously);
+                PhotoChoice best = await page.BetterPhotoPromise.Task;
+                return best == PhotoChoice.PhotoAIsBetter ? 1 : -1;
             }
         }
 
@@ -105,7 +130,7 @@ namespace CompetititiveCullingAlgorithm
             async Task calculateFnAsync()
             {
                 var bestPhotos = await Tournament.CalculateTopN(new PhotoGUIComparator(this), cancellationToken);
-                CurrentPage = null;
+                currentPage = null;
                 TournamentFinishedEvent(bestPhotos);
             }
             tournamentTask = calculateFnAsync();
@@ -128,6 +153,7 @@ namespace CompetititiveCullingAlgorithm
         public void Load(string path)
         {
             ReplaceTournament(Tournament<PhotoPath>.SavedState.LoadFromFile(path).Instantiate());
+            UndoStack.Clear();
         }
 
         private static string QuickSavePath { get { return Application.UserAppDataPath + @"\quick-save.xml"; } }
@@ -145,11 +171,16 @@ namespace CompetititiveCullingAlgorithm
             Load(QuickSavePath);
         }
 
+        public void DoChoosePhotoUndoable(PhotoChoice choice)
+        {
+            UndoStack.Do(new ChoosePhotoUndoable(this, choice));
+        }
+
         private void ReplaceTournament(Tournament<PhotoPath> newTournament)
         {
             this.tournamentTaskToken.Cancel();
             Tournament.NewWinnerEvent -= Tournament_NewWinnerEvent;
-            this.CurrentPage = null;
+            this.currentPage = null;
 
             StartTournament(newTournament);
         }
