@@ -310,8 +310,10 @@ namespace CompetititiveCullingAlgorithm
 
         public int TotalPlaces;
         private Node rootNode;
-        List<T> rankingWinners = new List<T>();
+        private List<T> rankingWinners = new List<T>();
         public int NumItems;
+
+        public IReadOnlyCollection<T> RankingWinners { get => rankingWinners.AsReadOnly(); }
 
         public int NextWinnerStepsMax { get; private set; }
         public int NextWinnerStepsDone { get; private set; }

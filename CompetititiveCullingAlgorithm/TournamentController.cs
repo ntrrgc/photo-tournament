@@ -189,5 +189,27 @@ namespace CompetititiveCullingAlgorithm
         {
             NewWinnerEvent(place, item);
         }
+
+        private void ExportWinnerPhotos(string destPath, Func<string, int, string> nameFormula)
+        {
+            int position = 0;
+            foreach (var srcPath in Tournament.RankingWinners)
+            {
+                position++;
+                File.Copy(srcPath, destPath + "\\" +
+                    nameFormula(Path.GetFileNameWithoutExtension(srcPath), position) +
+                    Path.GetExtension(srcPath), true);
+            }
+        }
+
+        public void ExportWinnerPhotosUnsorted(string destPath)
+        {
+            ExportWinnerPhotos(destPath, (name, position) => $"{name} - Rank{position:000}");
+        }
+
+        public void ExportWinnerPhotosSorted(string destPath)
+        {
+            ExportWinnerPhotos(destPath, (name, position) => $"Rank{position:000} - {name}");
+        }
     }
 }

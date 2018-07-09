@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.Serialization;
@@ -162,6 +163,7 @@ namespace CompetititiveCullingAlgorithm
             pgrNextWinner.Value = controller.Tournament.NextWinnerStepsDone;
             btnUndo.Enabled = controller.UndoStack.CanUndo;
             btnRedo.Enabled = controller.UndoStack.CanRedo;
+            btnExportUnsorted.Enabled = btnExportByRank.Enabled = controller.Tournament.RankingWinners.Count > 0;
         }
 
         private void btnUndo_Click(object sender, EventArgs e)
@@ -174,6 +176,36 @@ namespace CompetititiveCullingAlgorithm
         {
             controller.UndoStack.Redo();
             UpdateGUI();
+        }
+
+        private void ExportPhotosWithPicker(Action<string> savePhotosFn)
+        {
+            var dialog = new FolderBrowserDialog
+            {
+                Description = "Select the folder the winner photos will be copied to."
+            };
+            var result = dialog.ShowDialog(this);
+            if (result != DialogResult.OK)
+                return;
+            try
+            {
+                savePhotosFn(dialog.SelectedPath);
+                Process.Start("explorer.exe", dialog.SelectedPath);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Error while saving", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void btnExportByRank_Click(object sender, EventArgs e)
+        {
+            ExportPhotosWithPicker(path => controller.ExportWinnerPhotosSorted(path));
+        }
+
+        private void btnExportUnsorted_Click(object sender, EventArgs e)
+        {
+            ExportPhotosWithPicker(path => controller.ExportWinnerPhotosUnsorted(path));
         }
     }
 }
