@@ -359,20 +359,23 @@ namespace CompetititiveCullingAlgorithm
             }
 
             rootNode = baseLevel[0]; // The only remaining node is the root node
+
+            NextWinnerStepsDone = 0;
+            NextWinnerStepsMax = rootNode.CountUnanswered();
         }
 
         public async Task<List<T>> CalculateTopN(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
         {
             for (int place = 1; place <= TotalPlaces; place++)
             {
-                NextWinnerStepsDone = 0;
-                NextWinnerStepsMax = rootNode.CountUnanswered();
-
                 LeafNode winnerNode = await rootNode.BestNodeAsync(this, comparator, cancellationToken);
                 T winnerItem = winnerNode.Item;
                 NewWinnerEvent?.Invoke(place, winnerItem);
                 rankingWinners.Add(winnerItem);
                 //System.Console.WriteLine($"Winner: {winnerItem} Comparisons: {comparisonCount}");
+
+                NextWinnerStepsDone = 0;
+                NextWinnerStepsMax = rootNode.CountUnanswered();
 
                 if (place != TotalPlaces)
                 {
