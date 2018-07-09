@@ -155,6 +155,10 @@ namespace CompetititiveCullingAlgorithm
             btnChooseA.Enabled = btnChooseB.Enabled = controller.CurrentPage != null && BothImagesLoaded;
             UpdatePictureBoxWithPhoto(imgPhotoA, controller.CurrentPage.PhotoA);
             UpdatePictureBoxWithPhoto(imgPhotoB, controller.CurrentPage.PhotoB);
+            pgrGlobal.Maximum = controller.Tournament.GlobalStepsMax;
+            pgrGlobal.Value = controller.Tournament.GlobalStepsDone;
+            pgrNextWinner.Maximum = controller.Tournament.NextWinnerStepsMax;
+            pgrNextWinner.Value = controller.Tournament.NextWinnerStepsDone;
         }
     }
 }

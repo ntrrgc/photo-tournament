@@ -15,15 +15,17 @@ using static TournamentSort.Program;
 
 namespace CompetititiveCullingAlgorithm
 {
-    class Tournament<T>
+    public class Tournament<T>
     {
         #region Node tree
         [DataContract]
         abstract class Node
         {
             public abstract void ForEachLeafNode(Action<LeafNode> action);
-            public abstract Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken cancellationToken);
+            public abstract Task<LeafNode> BestNodeAsync(Tournament<T> tournament,
+                IAsyncComparator<T> comparator, CancellationToken cancellationToken);
             public abstract Node DeepClone();
+            public abstract int CountUnanswered();
             [DataMember]
             public BracketNode Parent { get; set; }
         }
@@ -39,7 +41,7 @@ namespace CompetititiveCullingAlgorithm
             [DataMember()]
             public readonly T Item;
 
-            public override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
+            public override Task<LeafNode> BestNodeAsync(Tournament<T> tournament, IAsyncComparator<T> comparator, CancellationToken cancellationToken)
             {
                 return Task.FromResult(this);
             }
@@ -52,6 +54,11 @@ namespace CompetititiveCullingAlgorithm
             public override Node DeepClone()
             {
                 return new LeafNode(Item);
+            }
+
+            public override int CountUnanswered()
+            {
+                return 0;
             }
         }
 
@@ -100,19 +107,20 @@ namespace CompetititiveCullingAlgorithm
                     Parent.OnDroppedCompetitor();
             }
 
-            public async override Task<LeafNode> BestNodeAsync(IAsyncComparator<T> comparator, CancellationToken cancellationToken)
+            public async override Task<LeafNode> BestNodeAsync(Tournament<T> tournament, IAsyncComparator<T> comparator, CancellationToken cancellationToken)
             {
                 if (BestCompetitor == null)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    T itemA = (await CompetitorA.BestNodeAsync(comparator, cancellationToken)).Item;
+                    T itemA = (await CompetitorA.BestNodeAsync(tournament, comparator, cancellationToken)).Item;
                     cancellationToken.ThrowIfCancellationRequested();
-                    T itemB = (await CompetitorB.BestNodeAsync(comparator, cancellationToken)).Item;
+                    T itemB = (await CompetitorB.BestNodeAsync(tournament, comparator, cancellationToken)).Item;
                     cancellationToken.ThrowIfCancellationRequested();
                     BestCompetitor = (await comparator.CompareAsync(itemA, itemB, cancellationToken)) > 0 ? CompetitorA : CompetitorB;
-                    cancellationToken.ThrowIfCancellationRequested();
+                    tournament.NextWinnerStepsDone++;
+                    tournament.GlobalStepsDone++;
                 }
-                return await BestCompetitor.BestNodeAsync(comparator, cancellationToken);
+                return await BestCompetitor.BestNodeAsync(tournament, comparator, cancellationToken);
             }
 
             public Node CompetitorOtherThan(Node node)
@@ -139,6 +147,11 @@ namespace CompetititiveCullingAlgorithm
                 else if (BestCompetitor == CompetitorB)
                     clone.BestCompetitor = clone.CompetitorB;
                 return clone;
+            }
+
+            public override int CountUnanswered()
+            {
+                return (BestCompetitor == null ? 1 : 0) + CompetitorA.CountUnanswered() + CompetitorB.CountUnanswered();
             }
         }
 
@@ -209,6 +222,10 @@ namespace CompetititiveCullingAlgorithm
                 TotalPlaces = tournament.TotalPlaces;
                 RootNode = tournament.rootNode.DeepClone();
                 RankingWinners = new List<T>(tournament.rankingWinners);
+                NumItems = tournament.NumItems;
+                GlobalStepsDone = tournament.GlobalStepsDone;
+                NextWinnerStepsDone = tournament.NextWinnerStepsDone;
+                NextWinnerStepsMax = tournament.NextWinnerStepsMax;
             }
 
             public Tournament<T> Instantiate()
@@ -217,7 +234,11 @@ namespace CompetititiveCullingAlgorithm
                 {
                     TotalPlaces = TotalPlaces,
                     rootNode = RootNode.DeepClone(),
-                    rankingWinners = RankingWinners
+                    rankingWinners = RankingWinners,
+                    NumItems = NumItems,
+                    GlobalStepsDone = GlobalStepsDone,
+                    NextWinnerStepsDone = NextWinnerStepsDone,
+                    NextWinnerStepsMax = NextWinnerStepsMax,
                 };
             }
 
@@ -277,11 +298,34 @@ namespace CompetititiveCullingAlgorithm
             private readonly Node RootNode;
             [DataMember()]
             private readonly List<T> RankingWinners = new List<T>();
+            [DataMember()]
+            private int NumItems;
+            [DataMember()]
+            private int GlobalStepsDone;
+            [DataMember()]
+            private int NextWinnerStepsMax;
+            [DataMember()]
+            private int NextWinnerStepsDone;
         }
 
         public int TotalPlaces;
         private Node rootNode;
         List<T> rankingWinners = new List<T>();
+        public int NumItems;
+
+        public int NextWinnerStepsMax { get; private set; }
+        public int NextWinnerStepsDone { get; private set; }
+
+        public int GlobalStepsDone { get; private set; } = 0;
+        public int GlobalStepsMax
+        {
+            get
+            {
+                var n = NumItems;
+                var k = TotalPlaces;
+                return (int)Math.Round(n - 1 + (k - 1) * Math.Log(n, 2));
+            }
+        }
 
         private Tournament()
         {
@@ -292,6 +336,7 @@ namespace CompetititiveCullingAlgorithm
         {
             totalPlaces = Math.Min(totalPlaces, items.Count);
             Debug.Assert(items.Count > 0);
+            NumItems = items.Count;
             TotalPlaces = totalPlaces;
 
             IReadOnlyList<Node> baseLevel = items.Select(item => new LeafNode(item)).ToList();
@@ -320,7 +365,10 @@ namespace CompetititiveCullingAlgorithm
         {
             for (int place = 1; place <= TotalPlaces; place++)
             {
-                LeafNode winnerNode = await rootNode.BestNodeAsync(comparator, cancellationToken);
+                NextWinnerStepsDone = 0;
+                NextWinnerStepsMax = rootNode.CountUnanswered();
+
+                LeafNode winnerNode = await rootNode.BestNodeAsync(this, comparator, cancellationToken);
                 T winnerItem = winnerNode.Item;
                 NewWinnerEvent?.Invoke(place, winnerItem);
                 rankingWinners.Add(winnerItem);

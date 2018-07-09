@@ -40,6 +40,8 @@
             this.label1 = new System.Windows.Forms.Label();
             this.btnChooseA = new System.Windows.Forms.Button();
             this.btnChooseB = new System.Windows.Forms.Button();
+            this.pgrNextWinner = new System.Windows.Forms.ProgressBar();
+            this.pgrGlobal = new System.Windows.Forms.ProgressBar();
             this.statusStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.imgPhotoA)).BeginInit();
@@ -97,7 +99,7 @@
             this.imgPhotoA.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imgPhotoA.Location = new System.Drawing.Point(3, 23);
             this.imgPhotoA.Name = "imgPhotoA";
-            this.imgPhotoA.Size = new System.Drawing.Size(455, 519);
+            this.imgPhotoA.Size = new System.Drawing.Size(455, 479);
             this.imgPhotoA.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.imgPhotoA.TabIndex = 3;
             this.imgPhotoA.TabStop = false;
@@ -107,7 +109,7 @@
             this.imgPhotoB.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imgPhotoB.Location = new System.Drawing.Point(464, 23);
             this.imgPhotoB.Name = "imgPhotoB";
-            this.imgPhotoB.Size = new System.Drawing.Size(455, 519);
+            this.imgPhotoB.Size = new System.Drawing.Size(455, 479);
             this.imgPhotoB.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.imgPhotoB.TabIndex = 4;
             this.imgPhotoB.TabStop = false;
@@ -122,13 +124,17 @@
             this.tableLayoutPanel1.Controls.Add(this.label1, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.btnChooseA, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.btnChooseB, 1, 2);
+            this.tableLayoutPanel1.Controls.Add(this.pgrNextWinner, 0, 3);
+            this.tableLayoutPanel1.Controls.Add(this.pgrGlobal, 0, 4);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 25);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 3;
+            this.tableLayoutPanel1.RowCount = 5;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 40F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
             this.tableLayoutPanel1.Size = new System.Drawing.Size(922, 585);
             this.tableLayoutPanel1.TabIndex = 5;
             // 
@@ -149,7 +155,7 @@
             this.btnChooseA.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChooseA.Location = new System.Drawing.Point(3, 548);
+            this.btnChooseA.Location = new System.Drawing.Point(3, 508);
             this.btnChooseA.Name = "btnChooseA";
             this.btnChooseA.Size = new System.Drawing.Size(455, 34);
             this.btnChooseA.TabIndex = 6;
@@ -163,7 +169,7 @@
             this.btnChooseB.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnChooseB.Location = new System.Drawing.Point(464, 548);
+            this.btnChooseB.Location = new System.Drawing.Point(464, 508);
             this.btnChooseB.Name = "btnChooseB";
             this.btnChooseB.Size = new System.Drawing.Size(455, 34);
             this.btnChooseB.TabIndex = 7;
@@ -171,6 +177,24 @@
             this.btnChooseB.Text = "This picture is better (2)";
             this.btnChooseB.UseVisualStyleBackColor = true;
             this.btnChooseB.Click += new System.EventHandler(this.btnChooseB_Click);
+            // 
+            // pgrNextWinner
+            // 
+            this.tableLayoutPanel1.SetColumnSpan(this.pgrNextWinner, 2);
+            this.pgrNextWinner.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pgrNextWinner.Location = new System.Drawing.Point(3, 548);
+            this.pgrNextWinner.Name = "pgrNextWinner";
+            this.pgrNextWinner.Size = new System.Drawing.Size(916, 14);
+            this.pgrNextWinner.TabIndex = 8;
+            // 
+            // pgrGlobal
+            // 
+            this.tableLayoutPanel1.SetColumnSpan(this.pgrGlobal, 2);
+            this.pgrGlobal.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.pgrGlobal.Location = new System.Drawing.Point(3, 568);
+            this.pgrGlobal.Name = "pgrGlobal";
+            this.pgrGlobal.Size = new System.Drawing.Size(916, 14);
+            this.pgrGlobal.TabIndex = 9;
             // 
             // MainWindow
             // 
@@ -210,5 +234,7 @@
         private System.Windows.Forms.Button btnChooseB;
         private System.Windows.Forms.ToolStripButton btnQuickLoad;
         private System.Windows.Forms.ToolStripButton toolStripButton2;
+        private System.Windows.Forms.ProgressBar pgrNextWinner;
+        private System.Windows.Forms.ProgressBar pgrGlobal;
     }
 }

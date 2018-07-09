@@ -47,7 +47,7 @@ namespace CompetititiveCullingAlgorithm
             }
         }
 
-        private Tournament<PhotoPath> Tournament;
+        public Tournament<PhotoPath> Tournament { get; private set; }
         private CancellationTokenSource tournamentTaskToken;
         private Task tournamentTask;
 
