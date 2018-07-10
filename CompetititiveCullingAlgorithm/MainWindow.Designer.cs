@@ -32,11 +32,16 @@
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.lblStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
-            this.btnQuickLoad = new System.Windows.Forms.ToolStripButton();
-            this.toolStripButton2 = new System.Windows.Forms.ToolStripButton();
+            this.btnNewTournament = new System.Windows.Forms.ToolStripButton();
+            this.btnLoad = new System.Windows.Forms.ToolStripButton();
+            this.btnSave = new System.Windows.Forms.ToolStripButton();
+            this.btnSaveAs = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnUndo = new System.Windows.Forms.ToolStripButton();
             this.btnRedo = new System.Windows.Forms.ToolStripButton();
+            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnExportByRank = new System.Windows.Forms.ToolStripButton();
+            this.btnExportUnsorted = new System.Windows.Forms.ToolStripButton();
             this.imgPhotoA = new System.Windows.Forms.PictureBox();
             this.imgPhotoB = new System.Windows.Forms.PictureBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
@@ -45,9 +50,6 @@
             this.btnChooseB = new System.Windows.Forms.Button();
             this.pgrNextWinner = new System.Windows.Forms.ProgressBar();
             this.pgrGlobal = new System.Windows.Forms.ProgressBar();
-            this.btnExportByRank = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.btnExportUnsorted = new System.Windows.Forms.ToolStripButton();
             this.statusStrip1.SuspendLayout();
             this.toolStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.imgPhotoA)).BeginInit();
@@ -74,8 +76,10 @@
             // toolStrip1
             // 
             this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.btnQuickLoad,
-            this.toolStripButton2,
+            this.btnNewTournament,
+            this.btnLoad,
+            this.btnSave,
+            this.btnSaveAs,
             this.toolStripSeparator1,
             this.btnUndo,
             this.btnRedo,
@@ -88,23 +92,41 @@
             this.toolStrip1.TabIndex = 2;
             this.toolStrip1.Text = "toolStrip1";
             // 
-            // btnQuickLoad
+            // btnNewTournament
             // 
-            this.btnQuickLoad.Image = ((System.Drawing.Image)(resources.GetObject("btnQuickLoad.Image")));
-            this.btnQuickLoad.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnQuickLoad.Name = "btnQuickLoad";
-            this.btnQuickLoad.Size = new System.Drawing.Size(84, 22);
-            this.btnQuickLoad.Text = "Quick load";
-            this.btnQuickLoad.Click += new System.EventHandler(this.toolStripButton1_Click);
+            this.btnNewTournament.Image = ((System.Drawing.Image)(resources.GetObject("btnNewTournament.Image")));
+            this.btnNewTournament.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnNewTournament.Name = "btnNewTournament";
+            this.btnNewTournament.Size = new System.Drawing.Size(117, 22);
+            this.btnNewTournament.Text = "New tournament";
+            this.btnNewTournament.Click += new System.EventHandler(this.btnNewTournament_Click_1);
             // 
-            // toolStripButton2
+            // btnLoad
             // 
-            this.toolStripButton2.Image = ((System.Drawing.Image)(resources.GetObject("toolStripButton2.Image")));
-            this.toolStripButton2.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripButton2.Name = "toolStripButton2";
-            this.toolStripButton2.Size = new System.Drawing.Size(84, 22);
-            this.toolStripButton2.Text = "Quick save";
-            this.toolStripButton2.Click += new System.EventHandler(this.toolStripButton2_Click);
+            this.btnLoad.Image = ((System.Drawing.Image)(resources.GetObject("btnLoad.Image")));
+            this.btnLoad.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnLoad.Name = "btnLoad";
+            this.btnLoad.Size = new System.Drawing.Size(119, 22);
+            this.btnLoad.Text = "Load tournament";
+            this.btnLoad.Click += new System.EventHandler(this.btnLoad_Click);
+            // 
+            // btnSave
+            // 
+            this.btnSave.Image = ((System.Drawing.Image)(resources.GetObject("btnSave.Image")));
+            this.btnSave.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSave.Name = "btnSave";
+            this.btnSave.Size = new System.Drawing.Size(117, 22);
+            this.btnSave.Text = "Save tournament";
+            this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
+            // 
+            // btnSaveAs
+            // 
+            this.btnSaveAs.Image = ((System.Drawing.Image)(resources.GetObject("btnSaveAs.Image")));
+            this.btnSaveAs.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnSaveAs.Name = "btnSaveAs";
+            this.btnSaveAs.Size = new System.Drawing.Size(65, 22);
+            this.btnSaveAs.Text = "Save as";
+            this.btnSaveAs.Click += new System.EventHandler(this.btnSaveAs_Click);
             // 
             // toolStripSeparator1
             // 
@@ -128,6 +150,29 @@
             this.btnRedo.Size = new System.Drawing.Size(54, 22);
             this.btnRedo.Text = "Redo";
             this.btnRedo.Click += new System.EventHandler(this.btnRedo_Click);
+            // 
+            // toolStripSeparator2
+            // 
+            this.toolStripSeparator2.Name = "toolStripSeparator2";
+            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
+            // 
+            // btnExportByRank
+            // 
+            this.btnExportByRank.Image = ((System.Drawing.Image)(resources.GetObject("btnExportByRank.Image")));
+            this.btnExportByRank.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnExportByRank.Name = "btnExportByRank";
+            this.btnExportByRank.Size = new System.Drawing.Size(138, 22);
+            this.btnExportByRank.Text = "Export sorted by rank";
+            this.btnExportByRank.Click += new System.EventHandler(this.btnExportByRank_Click);
+            // 
+            // btnExportUnsorted
+            // 
+            this.btnExportUnsorted.Image = ((System.Drawing.Image)(resources.GetObject("btnExportUnsorted.Image")));
+            this.btnExportUnsorted.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnExportUnsorted.Name = "btnExportUnsorted";
+            this.btnExportUnsorted.Size = new System.Drawing.Size(110, 22);
+            this.btnExportUnsorted.Text = "Export unsorted";
+            this.btnExportUnsorted.Click += new System.EventHandler(this.btnExportUnsorted_Click);
             // 
             // imgPhotoA
             // 
@@ -173,13 +218,13 @@
             this.tableLayoutPanel1.Size = new System.Drawing.Size(922, 585);
             this.tableLayoutPanel1.TabIndex = 5;
             // 
-            // label1
+            // lblHint
             // 
             this.lblHint.AutoSize = true;
             this.tableLayoutPanel1.SetColumnSpan(this.lblHint, 2);
             this.lblHint.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblHint.Location = new System.Drawing.Point(3, 0);
-            this.lblHint.Name = "label1";
+            this.lblHint.Name = "lblHint";
             this.lblHint.Size = new System.Drawing.Size(916, 20);
             this.lblHint.TabIndex = 0;
             this.lblHint.Text = "Which picture fits better in the album?";
@@ -231,29 +276,6 @@
             this.pgrGlobal.Size = new System.Drawing.Size(916, 14);
             this.pgrGlobal.TabIndex = 9;
             // 
-            // btnExportByRank
-            // 
-            this.btnExportByRank.Image = ((System.Drawing.Image)(resources.GetObject("btnExportByRank.Image")));
-            this.btnExportByRank.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnExportByRank.Name = "btnExportByRank";
-            this.btnExportByRank.Size = new System.Drawing.Size(138, 22);
-            this.btnExportByRank.Text = "Export sorted by rank";
-            this.btnExportByRank.Click += new System.EventHandler(this.btnExportByRank_Click);
-            // 
-            // toolStripSeparator2
-            // 
-            this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(6, 25);
-            // 
-            // btnExportUnsorted
-            // 
-            this.btnExportUnsorted.Image = ((System.Drawing.Image)(resources.GetObject("btnExportUnsorted.Image")));
-            this.btnExportUnsorted.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnExportUnsorted.Name = "btnExportUnsorted";
-            this.btnExportUnsorted.Size = new System.Drawing.Size(110, 22);
-            this.btnExportUnsorted.Text = "Export unsorted";
-            this.btnExportUnsorted.Click += new System.EventHandler(this.btnExportUnsorted_Click);
-            // 
             // MainWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -265,6 +287,7 @@
             this.KeyPreview = true;
             this.Name = "MainWindow";
             this.Text = "Photo Tournament";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.MainWindow_FormClosing);
             this.Load += new System.EventHandler(this.MainWindow_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainWindow_KeyDown);
             this.statusStrip1.ResumeLayout(false);
@@ -290,8 +313,8 @@
         private System.Windows.Forms.Label lblHint;
         private System.Windows.Forms.Button btnChooseA;
         private System.Windows.Forms.Button btnChooseB;
-        private System.Windows.Forms.ToolStripButton btnQuickLoad;
-        private System.Windows.Forms.ToolStripButton toolStripButton2;
+        private System.Windows.Forms.ToolStripButton btnLoad;
+        private System.Windows.Forms.ToolStripButton btnSave;
         private System.Windows.Forms.ProgressBar pgrNextWinner;
         private System.Windows.Forms.ProgressBar pgrGlobal;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
@@ -300,5 +323,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton btnExportByRank;
         private System.Windows.Forms.ToolStripButton btnExportUnsorted;
+        private System.Windows.Forms.ToolStripButton btnNewTournament;
+        private System.Windows.Forms.ToolStripButton btnSaveAs;
     }
 }

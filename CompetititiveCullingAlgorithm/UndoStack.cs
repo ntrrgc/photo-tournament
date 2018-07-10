@@ -52,8 +52,9 @@ namespace CompetititiveCullingAlgorithm
         public void Redo()
         {
             Debug.Assert(CanRedo);
-            cursorPosition.Value.Do();
+            var undoable = cursorPosition.Value;
             cursorPosition = cursorPosition.Next;
+            undoable.Do();
         }
 
         public void Clear()

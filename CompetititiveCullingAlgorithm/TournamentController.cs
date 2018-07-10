@@ -54,6 +54,14 @@ namespace CompetititiveCullingAlgorithm
         private Page currentPage;
         public IPageUIClient CurrentPage { get => currentPage; }
 
+        public string TournamentFilePath { get; private set; } = null;
+        public bool MadeAnyChanges { get => Tournament != null && fileVersionId != memoryVersionId; }
+
+        // These fields are used to know when the file in memory and in disk differ
+        private int lastVersionId = 0;
+        private int fileVersionId;
+        private int memoryVersionId;
+
         public delegate void NewWinnerEventHandler(int place, PhotoPath item);
         public event NewWinnerEventHandler NewWinnerEvent;
 
@@ -71,22 +79,28 @@ namespace CompetititiveCullingAlgorithm
             private readonly TournamentController controller;
             private readonly PhotoChoice choice;
             private readonly Tournament<PhotoPath>.SavedState savedState;
+            private readonly int versionIdBefore;
+            private readonly int versionIdAfter;
 
             public ChoosePhotoUndoable(TournamentController controller, PhotoChoice choice) {
                 this.controller = controller;
                 this.choice = choice;
                 this.savedState = controller.Tournament.SaveState();
+                this.versionIdBefore = controller.memoryVersionId;
+                this.versionIdAfter = ++controller.lastVersionId;
             }
 
             public string Name => "Choose photo";
 
             public void Do()
             {
+                controller.memoryVersionId = versionIdAfter;
                 controller.currentPage.Choose(choice);
             }
 
             public void Undo()
             {
+                controller.memoryVersionId = versionIdBefore;
                 controller.ReplaceTournament(savedState.Instantiate());
             }
         }
@@ -136,24 +150,35 @@ namespace CompetititiveCullingAlgorithm
             tournamentTask = calculateFnAsync();
         }
 
+        public class NoPhotosException: Exception
+        {
+        }
+
         public void StartNewTournament(string sourcePhotoFolder, int totalPlaces)
         {
             List<PhotoPath> photos = FindPhotosInPath(sourcePhotoFolder);
+            if (photos.Count == 0)
+                throw new NoPhotosException();
             StartTournament(new Tournament<PhotoPath>(photos, totalPlaces));
-
-            if (photos.Count > 0)
-                Debug.Assert(CurrentPage != null);
+            Debug.Assert(CurrentPage != null);
+            TournamentFilePath = null;
+            fileVersionId = 0; 
+            memoryVersionId = lastVersionId = 1; // Enable Save right now
         }
 
         public void Save(string path)
         {
             Tournament.SaveState().SaveToFile(path);
+            TournamentFilePath = path;
+            fileVersionId = memoryVersionId;
         }
 
         public void Load(string path)
         {
             ReplaceTournament(Tournament<PhotoPath>.SavedState.LoadFromFile(path).Instantiate());
             UndoStack.Clear();
+            TournamentFilePath = path;
+            memoryVersionId = fileVersionId = lastVersionId = 0;
         }
 
         private static string QuickSavePath { get { return Application.UserAppDataPath + @"\quick-save.xml"; } }
@@ -178,8 +203,11 @@ namespace CompetititiveCullingAlgorithm
 
         private void ReplaceTournament(Tournament<PhotoPath> newTournament)
         {
-            this.tournamentTaskToken.Cancel();
-            Tournament.NewWinnerEvent -= Tournament_NewWinnerEvent;
+            if (Tournament != null)
+            {
+                this.tournamentTaskToken.Cancel();
+                this.Tournament.NewWinnerEvent -= Tournament_NewWinnerEvent;
+            }
             this.currentPage = null;
 
             StartTournament(newTournament);

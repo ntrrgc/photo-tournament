@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text;
@@ -34,7 +35,6 @@ namespace CompetititiveCullingAlgorithm
             controller.TournamentFinishedEvent += Tournament_TournamentFinishedEvent;
             controller.NewPageEvent += Tournament_NewPageEvent;
             controller.PreloadPhotosAdvicedEvent += Controller_PreloadPhotosAdvicedEvent;
-            controller.StartNewTournament(@"V:\Photos\2018\2018-03-26 Fotos en Salamanca", 3);
 
             UpdateGUI();
         }
@@ -63,7 +63,7 @@ namespace CompetititiveCullingAlgorithm
 
         private void UpdatePictureBoxWithPhoto(PictureBox pictureBox, string photoPath)
         {
-            var oldRequest = (ImageLoadRequest) pictureBox.Tag;
+            var oldRequest = (ImageLoadRequest)pictureBox.Tag;
             if (oldRequest?.RcImage.Path == photoPath)
                 return;
 
@@ -96,7 +96,6 @@ namespace CompetititiveCullingAlgorithm
 
         private void Tournament_TournamentFinishedEvent(List<PhotoPath> bestPhotos)
         {
-            lblHint.Text = $"A selection of the best {bestPhotos.Count} photos is complete. You can export it now.";
             UpdateGUI();
         }
 
@@ -134,14 +133,73 @@ namespace CompetititiveCullingAlgorithm
             controller.DoChoosePhotoUndoable(TournamentController.PhotoChoice.PhotoBIsBetter);
         }
 
-        private void toolStripButton2_Click(object sender, EventArgs e)
+        private bool TrySave()
         {
-            controller.SaveQuick();
+            if (controller.TournamentFilePath == null)
+                return TrySaveAs();
+            else
+            {
+                try
+                {
+                    controller.Save(controller.TournamentFilePath);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.Message, "Error while saving", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+            }
         }
 
-        private void toolStripButton1_Click(object sender, EventArgs e)
+        private bool TrySaveAs()
         {
-            controller.LoadQuick();
+            var dialog = new SaveFileDialog()
+            {
+                FileName = "My selection.tournament",
+                DefaultExt = ".tournament",
+                InitialDirectory = NewTournamentDialog.LatestPickedSourceDirectory,
+                Filter = "Tournament files (*.tournament)|*.*",
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return false;
+            try
+            {
+                controller.Save(dialog.FileName);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Error while saving", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private void btnSave_Click(object sender, EventArgs e)
+        {
+            TrySave();
+            UpdateGUI();
+        }
+
+        private void btnLoad_Click(object sender, EventArgs e)
+        {
+            var dialog = new OpenFileDialog()
+            {
+                FileName = "My selection.tournament",
+                DefaultExt = ".tournament",
+                InitialDirectory = NewTournamentDialog.LatestPickedSourceDirectory,
+                Filter = "Tournament files (*.tournament)|*.*",
+            };
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+            try
+            {
+                controller.Load(dialog.FileName);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, ex.Message, "Error while loading", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
             UpdateGUI();
         }
 
@@ -159,17 +217,44 @@ namespace CompetititiveCullingAlgorithm
 
         private void UpdateGUI()
         {
-            btnQuickLoad.Enabled = controller.QuickSaveExists;
+            bool hasTournament = controller.Tournament != null;
+            if (hasTournament)
+            {
+                String fileName = controller.TournamentFilePath != null
+                    ? Path.GetFileNameWithoutExtension(controller.TournamentFilePath)
+                    : "New tournament";
+                String star = controller.MadeAnyChanges ? "*" : "";
+                this.Text = $"Photo Tournament - {fileName}{star}";
+            }
+            else
+                this.Text = "Photo Tournament";
+
+            if (hasTournament && controller.Tournament.Finished)
+                lblHint.Text = $"A selection of the best {controller.Tournament.RankingWinners.Count} photos is complete. You can export it now.";
+            else if (hasTournament)
+                lblHint.Text = "Which picture fits better in the album?";
+            else
+                lblHint.Text = "Create a new tournament to start.";
+
+            btnSave.Enabled = hasTournament && controller.MadeAnyChanges;
+            btnSaveAs.Enabled = hasTournament;
             btnChooseA.Enabled = btnChooseB.Enabled = controller.CurrentPage != null && BothImagesLoaded;
             UpdatePictureBoxWithPhoto(imgPhotoA, controller.CurrentPage?.PhotoA);
             UpdatePictureBoxWithPhoto(imgPhotoB, controller.CurrentPage?.PhotoB);
-            pgrGlobal.Maximum = controller.Tournament.GlobalStepsMax;
-            pgrGlobal.Value = controller.Tournament.Finished ? pgrGlobal.Maximum : controller.Tournament.GlobalStepsDone;
-            pgrNextWinner.Maximum = controller.Tournament.NextWinnerStepsMax;
-            pgrNextWinner.Value = controller.Tournament.Finished ? pgrNextWinner.Maximum : controller.Tournament.NextWinnerStepsDone;
+            if (hasTournament)
+            {
+                pgrGlobal.Maximum = controller.Tournament.GlobalStepsMax;
+                pgrGlobal.Value = controller.Tournament.Finished ? pgrGlobal.Maximum : controller.Tournament.GlobalStepsDone;
+                pgrNextWinner.Maximum = controller.Tournament.NextWinnerStepsMax;
+                pgrNextWinner.Value = controller.Tournament.Finished ? pgrNextWinner.Maximum : controller.Tournament.NextWinnerStepsDone;
+            }
+            else
+            {
+                pgrGlobal.Maximum = pgrNextWinner.Maximum = pgrGlobal.Value = pgrNextWinner.Value = 0;
+            }
             btnUndo.Enabled = controller.UndoStack.CanUndo;
             btnRedo.Enabled = controller.UndoStack.CanRedo;
-            btnExportUnsorted.Enabled = btnExportByRank.Enabled = controller.Tournament.RankingWinners.Count > 0;
+            btnExportUnsorted.Enabled = btnExportByRank.Enabled = hasTournament && controller.Tournament.RankingWinners.Count > 0;
         }
 
         private void btnUndo_Click(object sender, EventArgs e)
@@ -184,7 +269,7 @@ namespace CompetititiveCullingAlgorithm
             UpdateGUI();
         }
 
-        private void ExportPhotosWithPicker(Action<string> savePhotosFn)
+        private bool ExportPhotosWithPicker(Action<string> savePhotosFn)
         {
             var dialog = new FolderBrowserDialog
             {
@@ -192,15 +277,17 @@ namespace CompetititiveCullingAlgorithm
             };
             var result = dialog.ShowDialog(this);
             if (result != DialogResult.OK)
-                return;
+                return false;
             try
             {
                 savePhotosFn(dialog.SelectedPath);
                 Process.Start("explorer.exe", dialog.SelectedPath);
+                return true;
             }
             catch (Exception ex)
             {
                 MessageBox.Show(this, ex.Message, "Error while saving", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
@@ -212,6 +299,41 @@ namespace CompetititiveCullingAlgorithm
         private void btnExportUnsorted_Click(object sender, EventArgs e)
         {
             ExportPhotosWithPicker(path => controller.ExportWinnerPhotosUnsorted(path));
+        }
+
+        private void btnNewTournament_Click_1(object sender, EventArgs e)
+        {
+            var dialog = new NewTournamentDialog();
+            if (dialog.ShowDialog(this) != DialogResult.OK)
+                return;
+            try
+            {
+                controller.StartNewTournament(dialog.SelectedSourceDir, dialog.SelectedTotalPlaces);
+            }
+            catch (TournamentController.NoPhotosException)
+            {
+                MessageBox.Show(this, "There are no photos in the provided folder.", "No photos", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            UpdateGUI();
+        }
+
+        private void MainWindow_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (controller.MadeAnyChanges)
+            {
+                var response = MessageBox.Show(this, "Do you want to save your changes?", "Save your changes", MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Exclamation, MessageBoxDefaultButton.Button1);
+                if (response == DialogResult.Yes)
+                    e.Cancel = !TrySave();
+                else if (response == DialogResult.Cancel)
+                    e.Cancel = true;
+            }
+        }
+
+        private void btnSaveAs_Click(object sender, EventArgs e)
+        {
+            TrySaveAs();
+            UpdateGUI();
         }
     }
 }
