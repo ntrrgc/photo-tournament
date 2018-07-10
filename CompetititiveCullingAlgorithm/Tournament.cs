@@ -111,6 +111,8 @@ namespace TournamentSort
             {
                 if (BestCompetitor == null)
                 {
+                    Debug.Assert(tournament.NextWinnerStepsMax > 0);
+                    Debug.Assert(tournament.NextWinnerStepsMax - tournament.NextWinnerStepsDone > 0);
                     cancellationToken.ThrowIfCancellationRequested();
                     T itemA = (await CompetitorA.BestNodeAsync(tournament, comparator, cancellationToken)).Item;
                     cancellationToken.ThrowIfCancellationRequested();
@@ -118,7 +120,9 @@ namespace TournamentSort
                     cancellationToken.ThrowIfCancellationRequested();
                     BestCompetitor = (await comparator.CompareAsync(itemA, itemB, cancellationToken)) > 0 ? CompetitorA : CompetitorB;
                     tournament.NextWinnerStepsDone++;
+                    Debug.Assert(tournament.NextWinnerStepsDone <= tournament.NextWinnerStepsMax);
                     tournament.GlobalStepsDone++;
+                    Debug.Assert(tournament.GlobalStepsDone <= tournament.GlobalStepsMax);
                 }
                 return await BestCompetitor.BestNodeAsync(tournament, comparator, cancellationToken);
             }
@@ -377,9 +381,6 @@ namespace TournamentSort
                 rankingWinners.Add(winnerItem);
                 //System.Console.WriteLine($"Winner: {winnerItem} Comparisons: {comparisonCount}");
 
-                NextWinnerStepsDone = 0;
-                NextWinnerStepsMax = rootNode.CountUnanswered();
-
                 if (place != TotalPlaces)
                 {
                     /* When there is a winner, its dropped from the competition so that we have a 2nd place winner and so on. */
@@ -401,6 +402,9 @@ namespace TournamentSort
                         rootNode = replacement;
                     }
                 }
+
+                NextWinnerStepsDone = 0;
+                NextWinnerStepsMax = rootNode.CountUnanswered();
 
                 //PlotBrackets(rootNode);
             }
