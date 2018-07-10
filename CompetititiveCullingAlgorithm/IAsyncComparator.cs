@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace CompetititiveCullingAlgorithm
+namespace TournamentSort
 {
     public interface IAsyncComparator<T>
     {

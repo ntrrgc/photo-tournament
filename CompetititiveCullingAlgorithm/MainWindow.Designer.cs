@@ -1,4 +1,4 @@
-﻿namespace CompetititiveCullingAlgorithm
+﻿namespace TournamentSort
 {
     partial class MainWindow
     {
@@ -284,6 +284,7 @@
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.toolStrip1);
             this.Controls.Add(this.statusStrip1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.KeyPreview = true;
             this.Name = "MainWindow";
             this.Text = "Photo Tournament";

@@ -12,7 +12,7 @@ using System.Windows.Forms;
 using System.Xml;
 using System.Xml.Serialization;
 
-namespace CompetititiveCullingAlgorithm
+namespace TournamentSort
 {
     using PhotoPath = String;
 

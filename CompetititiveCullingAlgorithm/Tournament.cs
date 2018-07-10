@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using static TournamentSort.Program;
 
-namespace CompetititiveCullingAlgorithm
+namespace TournamentSort
 {
     public class Tournament<T>
     {

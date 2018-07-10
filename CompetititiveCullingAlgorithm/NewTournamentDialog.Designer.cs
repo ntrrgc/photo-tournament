@@ -1,4 +1,4 @@
-﻿namespace CompetititiveCullingAlgorithm
+﻿namespace TournamentSort
 {
     partial class NewTournamentDialog
     {
