@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TournamentSort
+namespace PhotoTournament
 {
     public static class ShuffleExt
     {

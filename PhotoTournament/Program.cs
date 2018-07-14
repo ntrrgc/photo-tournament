@@ -1,8 +1,8 @@
-﻿using TournamentSort;
+﻿using PhotoTournament;
 using System;
 using System.Windows.Forms;
 
-namespace TournamentSort
+namespace PhotoTournament
 {
     public partial class Program
     {

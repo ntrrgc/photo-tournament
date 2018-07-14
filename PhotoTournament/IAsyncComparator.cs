@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace TournamentSort
+namespace PhotoTournament
 {
     public interface IAsyncComparator<T>
     {

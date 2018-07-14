@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TournamentSort
+namespace PhotoTournament
 {
     class LRUCache<K, V>
     {

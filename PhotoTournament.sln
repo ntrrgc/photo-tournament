@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27130.2026
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TournamentSort", "CompetititiveCullingAlgorithm\TournamentSort.csproj", "{150AA255-C9A9-4B8D-8358-766137C709EE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PhotoTournament", "PhotoTournament\PhotoTournament.csproj", "{150AA255-C9A9-4B8D-8358-766137C709EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

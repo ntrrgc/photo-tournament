@@ -12,7 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace TournamentSort
+namespace PhotoTournament
 {
     using PhotoPath = String;
 

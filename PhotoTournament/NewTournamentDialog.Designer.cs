@@ -1,4 +1,4 @@
-﻿namespace TournamentSort
+﻿namespace PhotoTournament
 {
     partial class NewTournamentDialog
     {
